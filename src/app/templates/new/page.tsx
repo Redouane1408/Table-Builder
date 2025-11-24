@@ -1,0 +1,130 @@
+"use client";
+import React, { useEffect, useMemo, useState } from 'react';
+import Layout from '@/components/common/Layout';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { mockApi } from '@/lib/mockData';
+import { CFCanvasData, Canvas, CfContractRow } from '@/lib/types';
+import CfContractRowForm from '@/components/canvas/CfContractRowForm';
+import { Save, Send, Trash2 } from 'lucide-react';
+
+const currency = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(n);
+
+export default function TemplateNewPage() {
+  const [canvas, setCanvas] = useState<Canvas | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const c = await mockApi.createCanvas({});
+        setCanvas(c);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const data = useMemo(() => (canvas?.data as CFCanvasData) || { contracts: [] }, [canvas]);
+
+  const addRow = async (row: CfContractRow) => {
+    if (!canvas) return;
+    const updated = await mockApi.addContractRow(canvas.id, row);
+    setCanvas({ ...updated });
+  };
+
+  const removeRow = async (rowId: string) => {
+    if (!canvas) return;
+    const updated = await mockApi.deleteContractRow(canvas.id, rowId);
+    setCanvas({ ...updated });
+  };
+
+  const submit = async () => {
+    if (!canvas) return;
+    const updated = await mockApi.submitCanvas(canvas.id);
+    setCanvas({ ...updated });
+  };
+
+  if (loading) return (
+    <Layout><div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div></Layout>
+  );
+  if (error || !canvas) return (<Layout><div className="p-6">Erreur: {error || 'Canvas manquant'}</div></Layout>);
+
+  return (
+    <ProtectedRoute allowedRoles={['CF','DRB']}>
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Éditer le Modèle</h1>
+            <p className="text-gray-600">Période: {canvas.period} • Wilaya: {canvas.wilaya?.name}</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-2">
+              <Save className="w-4 h-4" /> Brouillon
+            </button>
+            <button onClick={submit} className="px-4 py-2 rounded-lg btn-brand flex items-center gap-2">
+              <Send className="w-4 h-4" /> Soumettre
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Ajouter une ligne</h3>
+          <CfContractRowForm onSubmit={addRow} />
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service Contractant</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Partenaire</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Objet</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forme</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nature</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Versement</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Taux</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">TTC</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avenant</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Final</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Devise</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {data.contracts.map((r) => (
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.service_contractant.source} • {r.service_contractant.label}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.partenaire_cocontractant}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.objet_du_marche}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.forme_du_marche}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.nature_prestation}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.mode_passation}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{currency(r.montant_versement_dzd)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.taux_versement_pct}%</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{currency(r.montant_ttc_dzd)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{currency(r.montant_avenant_dzd)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{currency(r.montant_final_marche_dzd)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{r.montant_en_devise ? `${r.montant_en_devise.amount} ${r.montant_en_devise.currency}` : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      <button className="text-red-600 hover:text-red-800 p-1" onClick={() => removeRow(r.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Layout>
+    </ProtectedRoute>
+  );
+}
