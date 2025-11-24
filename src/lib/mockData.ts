@@ -214,5 +214,3 @@ export const mockApi = {
     return canvas;
   },
 };
-
-export type Report = any;
