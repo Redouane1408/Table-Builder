@@ -80,6 +80,7 @@ export interface CfContractRow {
   montant_avenant_dzd: number;
   montant_final_marche_dzd: number;
   montant_en_devise?: CfMontantDevise;
+  dynamic_values?: Record<string, any>;
 }
 
 export interface CFCanvasData {
@@ -103,4 +104,59 @@ export interface Report {
   updated_at: string;
   user?: User;
   canvas?: Canvas;
+}
+
+export type DynamicColumnType = 'string' | 'dropdown' | 'percentage' | 'amount_dzd' | 'amount_fx';
+
+export interface DynamicColumn {
+  id: string;
+  name: string;
+  name_fr?: string;
+  name_ar?: string;
+  type: DynamicColumnType;
+  options?: string[];
+  options_bi?: { key: string; name_fr: string; name_ar: string }[];
+  created_at: string;
+  created_by?: string;
+}
+
+export interface BaseCanvaColumn {
+  id: string;
+  name: string;
+  type: DynamicColumnType;
+  note?: string;
+}
+
+export interface AvenantRow {
+  id: string;
+  numero_avenant: string;
+  date_avenant: string;
+  objet_avenant: string;
+  type_avenant: 'additif' | 'soustractif' | 'reallocation';
+  mode_passation?: ModePassation;
+  montant_avenant_dzd: number;
+  taux_variation_pct: number;
+  nouveau_montant_final_dzd: number;
+  montant_en_devise?: CfMontantDevise;
+  motif?: string;
+}
+
+export interface AvenantCanvasData {
+  avenants: AvenantRow[];
+}
+
+export interface DerivedCanvasColumn {
+  id: string;
+  key: string;
+  name_fr: string;
+  name_ar: string;
+}
+
+export interface DerivedCanvas {
+  id: string;
+  source_canva: 'marches' | 'avenants';
+  source_column_id: string;
+  name_fr: string;
+  name_ar: string;
+  columns: DerivedCanvasColumn[];
 }

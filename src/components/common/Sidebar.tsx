@@ -15,13 +15,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const items = [
     { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['CF','DRB','DGB'] },
     { name: t('templates'), href: '/templates', icon: FileText, roles: ['CF','DRB','DGB'] },
+    { name: 'Canvas Overview', href: '/templates/overview', icon: BarChart3, roles: ['CF','DRB','DGB'] },
     { name: t('users'), href: '/users', icon: Users, roles: ['DRB','DGB'] },
     { name: t('reports'), href: '/reports', icon: BarChart3, roles: ['CF','DRB'] },
+    { name: t('columns'), href: '/superadmin/columns', icon: FileText, roles: ['DGB'] },
     { name: t('profile'), href: '/profile', icon: UserCircle, roles: ['CF','DRB','DGB'] },
   ].filter(i => i.roles.includes(user?.role || 'CF'));
 
   return (
-    <div className={`${isCollapsed ? 'w-18' : 'w-72'} bg-gradient-to-b from-white to-blue-50 shadow-xl transition-all duration-300 flex flex-col border-r border-gray-200`}>
+    <div className={`${isCollapsed ? 'w-18' : 'w-72'} glass-sidebar shadow-xl transition-all duration-300 flex flex-col`}>
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         {!isCollapsed && (
           <div className="flex items-center gap-2">

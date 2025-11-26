@@ -6,6 +6,7 @@ export const dict = {
     users: 'Utilisateurs',
     reports: 'Rapports',
     profile: 'Profil',
+    columns: 'Colonnes',
     wilaya: 'Wilaya',
     language: 'Langue',
     login_title: 'Connexion',
@@ -19,6 +20,7 @@ export const dict = {
     users: 'المستخدمون',
     reports: 'التقارير',
     profile: 'الملف الشخصي',
+    columns: 'الأعمدة',
     wilaya: 'الولاية',
     language: 'اللغة',
     login_title: 'تسجيل الدخول',
@@ -30,4 +32,3 @@ export const dict = {
 export const translate = (key: keyof typeof dict['fr'], lang: 'fr' | 'ar') => {
   return dict[lang][key] || key;
 };
-

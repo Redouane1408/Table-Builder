@@ -54,7 +54,7 @@ export default function TemplateNewPage() {
   if (error || !canvas) return (<Layout><div className="p-6">Erreur: {error || 'Canvas manquant'}</div></Layout>);
 
   return (
-    <ProtectedRoute allowedRoles={['CF','DRB']}>
+    <ProtectedRoute allowedRoles={['CF','DRB','DGB']}>
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -76,6 +76,7 @@ export default function TemplateNewPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Ajouter une ligne</h3>
           <CfContractRowForm onSubmit={addRow} />
         </div>
+
 
         <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">

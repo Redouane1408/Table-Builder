@@ -92,3 +92,25 @@ body {
   background-size: 200% 100%;
   animation: shine 2.5s linear infinite;
 }
+
+/* Glassmorphism utilities */
+.glass-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.glass-panel { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(14px); }
+.glass-sidebar { background: rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(12px); }
+.btn-glass { background: rgba(255,255,255,0.18); color: #0f172a; border: 1px solid rgba(255,255,255,0.3); }
+.btn-glass:hover { background: rgba(255,255,255,0.24); }
+
+.use-glass .bg-white.rounded-xl { background: rgba(255,255,255,0.12)!important; border-color: rgba(255,255,255,0.25)!important; backdrop-filter: blur(14px); }
+.use-glass .border { border-color: rgba(255,255,255,0.25)!important; }
+.use-glass .shadow-sm { box-shadow: 0 8px 24px rgba(0,0,0,0.08)!important; }
+
+/* Brand gradient input borders */
+.input-gradient {
+  border: 1px solid transparent !important;
+  background: linear-gradient(#ffffff, #ffffff) padding-box,
+              linear-gradient(135deg, #2563eb, #10b981, #0ea5e9) border-box !important;
+}
+.input-gradient:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15), 0 0 0 6px rgba(16, 185, 129, 0.12) !important;
+  outline: none;
+}
