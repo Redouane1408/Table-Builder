@@ -101,7 +101,7 @@ export default function AvenantNewPage() {
                       <td className="px-4 py-3 text-sm text-gray-900">{r.taux_variation_pct}%</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{currency(r.nouveau_montant_final_dzd)}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">
-                        <button className="text-red-600 hover:text-red-800 p-1" onClick={() => removeRow(r.id)}>
+                        <button className="text-red-600 hover:text-red-800 p-1" title="Supprimer" onClick={() => removeRow(r.id)}>
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
@@ -116,4 +116,3 @@ export default function AvenantNewPage() {
     </ProtectedRoute>
   );
 }
-

@@ -114,3 +114,15 @@ body {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15), 0 0 0 6px rgba(16, 185, 129, 0.12) !important;
   outline: none;
 }
+
+/* Remove browser autofill background for glass inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+}

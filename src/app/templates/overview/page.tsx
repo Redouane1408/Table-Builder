@@ -40,8 +40,10 @@ function DerivedCanvasCard({ canva, dc, onUpdated }: { canva: 'marches'|'avenant
   const { user } = useAuth();
   const [nameFr, setNameFr] = React.useState<string>(dc.name_fr);
   const [nameAr, setNameAr] = React.useState<string>(dc.name_ar);
-  const [pivot, setPivot] = React.useState<{ wilaya_id: string; wilaya_name: string; counts: Record<string, number> }[]>([]);
-  React.useEffect(() => { (async () => { const pv = await mockApi.getDerivedCanvasPivot(canva, dc.id); setPivot(pv); })(); }, [canva, dc.id]);
+  const [pivotCounts, setPivotCounts] = React.useState<{ wilaya_id: string; wilaya_name: string; counts: Record<string, number> }[]>([]);
+  const [pivotAmounts, setPivotAmounts] = React.useState<{ wilaya_id: string; wilaya_name: string; counts: Record<string, number> }[]>([]);
+  const [metric, setMetric] = React.useState<'count'|'amount'>('count');
+  React.useEffect(() => { (async () => { const pvC = await mockApi.getDerivedCanvasPivot(canva, dc.id); setPivotCounts(pvC); const pvA = await mockApi.getDerivedCanvasPivotAmounts(canva, dc.id); setPivotAmounts(pvA); })(); }, [canva, dc.id]);
   const saveNames = async () => { await mockApi.updateDerivedCanvasNames(canva, dc.id, nameFr.trim() || dc.name_fr, nameAr.trim() || dc.name_ar); await onUpdated(); };
   const updateCol = async (key: string, fr: string, ar: string) => { await mockApi.updateDerivedCanvasColumnNames(canva, dc.id, key, fr, ar); await onUpdated(); };
   return (
@@ -51,7 +53,12 @@ function DerivedCanvasCard({ canva, dc, onUpdated }: { canva: 'marches'|'avenant
           <p className="text-sm text-gray-600">Source colonne</p>
           <h3 className="text-lg font-semibold text-gray-900">{currentLanguage === 'ar' ? dc.name_ar : dc.name_fr}</h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3 items-center">
+          <span className="text-xs text-gray-600">Counts</span>
+          <button role="switch" aria-checked={metric==='amount'} onClick={()=>setMetric(metric==='count' ? 'amount' : 'count')} className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${metric==='amount' ? 'bg-blue-600 border-blue-600' : 'bg-gray-300 border-gray-300'}`} title={metric==='amount' ? 'Afficher Amounts' : 'Afficher Counts'}>
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${metric==='amount' ? 'translate-x-5' : 'translate-x-1'}`} />
+          </button>
+          <span className="text-xs text-gray-600">Amounts</span>
           <input value={nameFr} onChange={(e)=>setNameFr(e.target.value)} placeholder="Nom FR" className="px-3 py-2 border rounded-lg" />
           <input value={nameAr} onChange={(e)=>setNameAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 border rounded-lg" />
           <button onClick={saveNames} className="px-3 py-2 rounded-lg btn-brand">Sauvegarder</button>
@@ -69,19 +76,19 @@ function DerivedCanvasCard({ canva, dc, onUpdated }: { canva: 'marches'|'avenant
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {pivot.map(row => (
+            {(metric==='count' ? pivotCounts : pivotAmounts).map(row => (
               <tr key={row.wilaya_id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-sm text-gray-900">{row.wilaya_name}</td>
                 {dc.columns.map(col => (
-                  <td key={col.id} className="px-4 py-3 text-sm text-gray-900">{row.counts[col.key] || 0}</td>
+                  <td key={col.id} className="px-4 py-3 text-sm text-gray-900">{metric==='count' ? (row.counts[col.key] || 0) : `${Math.round(row.counts[col.key] || 0).toLocaleString()} DZD`}</td>
                 ))}
-                <td className="px-4 py-3 text-sm text-gray-900">{Object.values(row.counts).reduce((a,b)=>a+b,0)}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{metric==='count' ? Object.values(row.counts).reduce((a,b)=>a+b,0) : `${Math.round(Object.values(row.counts).reduce((a,b)=>a+b,0)).toLocaleString()} DZD`}</td>
               </tr>
             ))}
             {(() => {
               const totals: Record<string, number> = {};
               for (const c of dc.columns) totals[c.key] = 0;
-              for (const r of pivot) {
+              for (const r of (metric==='count' ? pivotCounts : pivotAmounts)) {
                 for (const k of Object.keys(r.counts)) totals[k] = (totals[k] || 0) + r.counts[k];
               }
               const grand = Object.values(totals).reduce((a,b)=>a+b,0);
@@ -90,9 +97,9 @@ function DerivedCanvasCard({ canva, dc, onUpdated }: { canva: 'marches'|'avenant
                 <tr className="bg-emerald-50">
                   <td className="px-4 py-3 text-sm font-semibold text-gray-900">{drbLabel}</td>
                   {dc.columns.map(col => (
-                    <td key={col.id} className="px-4 py-3 text-sm font-semibold text-gray-900">{totals[col.key] || 0}</td>
+                    <td key={col.id} className="px-4 py-3 text-sm font-semibold text-gray-900">{metric==='count' ? (totals[col.key] || 0) : `${Math.round(totals[col.key] || 0).toLocaleString()} DZD`}</td>
                   ))}
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">{grand}</td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">{metric==='count' ? grand : `${Math.round(grand).toLocaleString()} DZD`}</td>
                 </tr>
               );
             })()}

@@ -1,4 +1,4 @@
-import { User, Wilaya, Canvas, Report, ChartData, CFCanvasData, CfContractRow, DynamicColumn, BaseCanvaColumn, AvenantCanvasData, AvenantRow, DerivedCanvas, DerivedCanvasColumn } from './types';
+import { User, Wilaya, Canvas, Report, ChartData, CFCanvasData, CfContractRow, DynamicColumn, BaseCanvaColumn, AvenantCanvasData, AvenantRow, DerivedCanvas, DerivedCanvasColumn, DRB, Commune, NewUserResult } from './types';
 
 export const mockWilayas: Wilaya[] = [
   { id: '1', name: 'Algiers', code: 'DZ-16' },
@@ -6,6 +6,22 @@ export const mockWilayas: Wilaya[] = [
   { id: '3', name: 'Constantine', code: 'DZ-25' },
   { id: '4', name: 'Annaba', code: 'DZ-23' },
   { id: '5', name: 'Blida', code: 'DZ-09' },
+];
+
+export const mockDRBs: DRB[] = [
+  { id: 'drb-1', name_fr: 'DRB Centre', name_ar: 'DRB الوسط' },
+  { id: 'drb-2', name_fr: 'DRB Est', name_ar: 'DRB الشرق' },
+  { id: 'drb-3', name_fr: 'DRB Ouest', name_ar: 'DRB الغرب' },
+  { id: 'drb-4', name_fr: 'DRB Sud', name_ar: 'DRB الجنوب' },
+  { id: 'drb-5', name_fr: 'DRB Hauts-Plateaux', name_ar: 'DRB الهضاب العليا' },
+  { id: 'drb-6', name_fr: 'DRB Sahara', name_ar: 'DRB الصحراء' },
+  { id: 'drb-7', name_fr: 'DRB Littoral', name_ar: 'DRB الساحل' },
+];
+
+export const mockCommunes: Commune[] = [
+  { id: 'c-1', wilaya_id: '1', name_fr: 'Bab El Oued', name_ar: 'باب الوادي' },
+  { id: 'c-2', wilaya_id: '1', name_fr: 'El Harrach', name_ar: 'الحراش' },
+  { id: 'c-3', wilaya_id: '2', name_fr: 'Es Senia', name_ar: 'السانية' },
 ];
 
 export const mockUsers: User[] = [
@@ -246,6 +262,33 @@ export const mockApi = {
     await new Promise(r => setTimeout(r, 150));
     return role ? mockUsers.filter(u => u.role === role) : mockUsers;
   },
+  createUser: async (email: string, role: 'CF'|'DRB'|'DGB', wilaya_id: string): Promise<NewUserResult> => {
+    await new Promise(r => setTimeout(r, 120));
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const w = mockWilayas.find(x => x.id === wilaya_id);
+    const u: User = { id, email, role, wilaya_id, wilaya_name: w?.name || '', created_at: now, updated_at: now } as User;
+    mockUsers.push(u);
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    let pwd = '';
+    for (let i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    return { user: u, password: pwd } as NewUserResult;
+  },
+  updateUser: async (id: string, patch: Partial<Pick<User,'email'|'role'|'wilaya_id'>>): Promise<User> => {
+    await new Promise(r => setTimeout(r, 120));
+    const idx = mockUsers.findIndex(u => u.id === id);
+    if (idx === -1) throw new Error('User not found');
+    const prev = mockUsers[idx];
+    const nextWilaya = typeof patch.wilaya_id === 'string' ? mockWilayas.find(w => w.id === patch.wilaya_id) : undefined;
+    const next: User = { ...prev, ...patch, wilaya_name: nextWilaya ? nextWilaya.name : prev.wilaya_name, updated_at: new Date().toISOString() } as User;
+    mockUsers[idx] = next;
+    return next;
+  },
+  deleteUser: async (id: string): Promise<void> => {
+    await new Promise(r => setTimeout(r, 80));
+    const idx = mockUsers.findIndex(u => u.id === id);
+    if (idx !== -1) mockUsers.splice(idx, 1);
+  },
   getReports: async (user_id?: string): Promise<Report[]> => {
     await new Promise(r => setTimeout(r, 150));
     return user_id ? mockReports.filter(r => r.user_id === user_id) : mockReports;
@@ -360,8 +403,8 @@ export const mockApi = {
         id: crypto.randomUUID(),
         source_canva: canva,
         source_column_id: col.id,
-        name_fr: col.name_fr || col.name,
-        name_ar: col.name_ar || col.name,
+        name_fr: (col as any).derived_name_fr || col.name_fr || col.name,
+        name_ar: (col as any).derived_name_ar || col.name_ar || col.name,
         columns: (col.options_bi && col.options_bi.length
           ? col.options_bi.map(o => ({ id: crypto.randomUUID(), key: o.key, name_fr: o.name_fr, name_ar: o.name_ar }))
           : (col.options || []).map(o => ({ id: crypto.randomUUID(), key: o, name_fr: o, name_ar: o }))
@@ -393,8 +436,8 @@ export const mockApi = {
       const dIdx = dArr.findIndex(dc => dc.source_column_id === id);
       if (dIdx !== -1) {
         const dc = dArr[dIdx];
-        const nameFr = (patch as any).name_fr as string | undefined;
-        const nameAr = (patch as any).name_ar as string | undefined;
+        const nameFr = (patch as any).derived_name_fr as string | undefined ?? (patch as any).name_fr as string | undefined;
+        const nameAr = (patch as any).derived_name_ar as string | undefined ?? (patch as any).name_ar as string | undefined;
         if (typeof nameFr === 'string' && nameFr) dc.name_fr = nameFr;
         if (typeof nameAr === 'string' && nameAr) dc.name_ar = nameAr;
         const optionsBi = (patch as any).options_bi as { key: string; name_fr: string; name_ar: string }[] | undefined;
@@ -506,6 +549,28 @@ export const mockApi = {
     }
     return dc.columns.map(col => ({ key: col.key, count: 0 }));
   },
+  getDerivedCanvasAmounts: async (canva: 'marches'|'avenants', id: string): Promise<{ key: string; amount: number }[]> => {
+    await new Promise(r => setTimeout(r, 120));
+    const arr = canva === 'marches' ? derivedCanvasesMarches : derivedCanvasesAvenants;
+    const dc = arr.find(d => d.id === id);
+    if (!dc) return [];
+    if (canva === 'marches') {
+      const srcCol = (dynamicColumnsMarches.find(c => c.id === dc.source_column_id));
+      const name = srcCol?.name || '';
+      const sums: Record<string, number> = {};
+      for (const c of mockCanvases) {
+        const data = c.data as CFCanvasData;
+        for (const row of data.contracts || []) {
+          const val = row.dynamic_values?.[name];
+          if (typeof val === 'string') {
+            sums[val] = (sums[val] || 0) + (row.montant_final_marche_dzd || 0);
+          }
+        }
+      }
+      return dc.columns.map(col => ({ key: col.key, amount: sums[col.key] || 0 }));
+    }
+    return dc.columns.map(col => ({ key: col.key, amount: 0 }));
+  },
   getDerivedCanvasPivot: async (canva: 'marches'|'avenants', id: string): Promise<{ wilaya_id: string; wilaya_name: string; counts: Record<string, number> }[]> => {
     await new Promise(r => setTimeout(r, 120));
     const arr = canva === 'marches' ? derivedCanvasesMarches : derivedCanvasesAvenants;
@@ -533,6 +598,36 @@ export const mockApi = {
       const counts: Record<string, number> = {};
       for (const col of dc.columns) counts[col.key] = 0;
       rows.push({ wilaya_id: w.id, wilaya_name: w.name, counts });
+    }
+    return rows;
+  },
+  getDerivedCanvasPivotAmounts: async (canva: 'marches'|'avenants', id: string): Promise<{ wilaya_id: string; wilaya_name: string; counts: Record<string, number> }[]> => {
+    await new Promise(r => setTimeout(r, 120));
+    const arr = canva === 'marches' ? derivedCanvasesMarches : derivedCanvasesAvenants;
+    const dc = arr.find(d => d.id === id);
+    if (!dc) return [];
+    const rows: { wilaya_id: string; wilaya_name: string; counts: Record<string, number> }[] = [];
+    if (canva === 'marches') {
+      const srcCol = dynamicColumnsMarches.find(c => c.id === dc.source_column_id);
+      const name = srcCol?.name || '';
+      for (const w of mockWilayas) {
+        const sums: Record<string, number> = {};
+        for (const col of dc.columns) sums[col.key] = 0;
+        for (const canvas of mockCanvases.filter(c => c.wilaya_id === w.id)) {
+          const data = canvas.data as CFCanvasData;
+          for (const row of data.contracts || []) {
+            const val = row.dynamic_values?.[name];
+            if (typeof val === 'string' && sums.hasOwnProperty(val)) sums[val] += (row.montant_final_marche_dzd || 0);
+          }
+        }
+        rows.push({ wilaya_id: w.id, wilaya_name: w.name, counts: sums });
+      }
+      return rows;
+    }
+    for (const w of mockWilayas) {
+      const sums: Record<string, number> = {};
+      for (const col of dc.columns) sums[col.key] = 0;
+      rows.push({ wilaya_id: w.id, wilaya_name: w.name, counts: sums });
     }
     return rows;
   },
@@ -619,4 +714,19 @@ export const mockApi = {
     canvas.updated_at = new Date().toISOString();
     return canvas;
   },
+  // Metadata CRUD
+  listDRBs: async (): Promise<DRB[]> => { await new Promise(r => setTimeout(r, 50)); return [...mockDRBs]; },
+  addDRB: async (fr: string, ar: string): Promise<DRB> => { await new Promise(r => setTimeout(r, 80)); const d: DRB = { id: crypto.randomUUID(), name_fr: fr, name_ar: ar || fr }; mockDRBs.push(d); return d; },
+  updateDRB: async (id: string, fr: string, ar: string): Promise<DRB> => { await new Promise(r => setTimeout(r, 80)); const idx = mockDRBs.findIndex(d => d.id === id); if (idx === -1) throw new Error('DRB not found'); const next = { ...mockDRBs[idx], name_fr: fr, name_ar: ar } as DRB; mockDRBs[idx] = next; return next; },
+  deleteDRB: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockDRBs.findIndex(d => d.id === id); if (idx !== -1) mockDRBs.splice(idx, 1); for (const w of mockWilayas) if (w.drb_id === id) w.drb_id = undefined; },
+
+  listWilayas: async (): Promise<Wilaya[]> => { await new Promise(r => setTimeout(r, 50)); return [...mockWilayas]; },
+  addWilaya: async (name_fr: string, name_ar: string, code: string, drb_id?: string): Promise<Wilaya> => { await new Promise(r => setTimeout(r, 80)); const w: Wilaya = { id: crypto.randomUUID(), name: name_fr, name_fr, name_ar, code, drb_id }; mockWilayas.push(w); return w; },
+  updateWilaya: async (id: string, patch: Partial<Pick<Wilaya,'name_fr'|'name_ar'|'code'|'drb_id'>>): Promise<Wilaya> => { await new Promise(r => setTimeout(r, 80)); const idx = mockWilayas.findIndex(w => w.id === id); if (idx === -1) throw new Error('Wilaya not found'); const next = { ...mockWilayas[idx], ...patch } as Wilaya; if (patch.name_fr) next.name = patch.name_fr; mockWilayas[idx] = next; return next; },
+  deleteWilaya: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockWilayas.findIndex(w => w.id === id); if (idx !== -1) mockWilayas.splice(idx, 1); for (let i = mockCommunes.length - 1; i >= 0; i--) if (mockCommunes[i].wilaya_id === id) mockCommunes.splice(i, 1); },
+
+  listCommunes: async (wilaya_id?: string): Promise<Commune[]> => { await new Promise(r => setTimeout(r, 50)); const arr = [...mockCommunes]; return wilaya_id ? arr.filter(c => c.wilaya_id === wilaya_id) : arr; },
+  addCommune: async (wilaya_id: string, name_fr: string, name_ar: string): Promise<Commune> => { await new Promise(r => setTimeout(r, 80)); const c: Commune = { id: crypto.randomUUID(), wilaya_id, name_fr, name_ar }; mockCommunes.push(c); return c; },
+  updateCommune: async (id: string, patch: Partial<Pick<Commune,'name_fr'|'name_ar'|'wilaya_id'>>): Promise<Commune> => { await new Promise(r => setTimeout(r, 80)); const idx = mockCommunes.findIndex(c => c.id === id); if (idx === -1) throw new Error('Commune not found'); const next = { ...mockCommunes[idx], ...patch } as Commune; mockCommunes[idx] = next; return next; },
+  deleteCommune: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockCommunes.findIndex(c => c.id === id); if (idx !== -1) mockCommunes.splice(idx, 1); },
 };

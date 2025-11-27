@@ -12,6 +12,9 @@ export interface Wilaya {
   id: string;
   name: string;
   code: string;
+  drb_id?: string;
+  name_fr?: string;
+  name_ar?: string;
 }
 
 export interface Canvas {
@@ -159,4 +162,22 @@ export interface DerivedCanvas {
   name_fr: string;
   name_ar: string;
   columns: DerivedCanvasColumn[];
+}
+
+export interface DRB {
+  id: string;
+  name_fr: string;
+  name_ar: string;
+}
+
+export interface Commune {
+  id: string;
+  wilaya_id: string;
+  name_fr: string;
+  name_ar: string;
+}
+
+export interface NewUserResult {
+  user: User;
+  password: string;
 }

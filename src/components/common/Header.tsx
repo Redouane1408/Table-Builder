@@ -1,17 +1,19 @@
 "use client";
 import React from 'react';
-import { LogOut, User, Bell, Globe } from 'lucide-react';
+import { LogOut, User, Bell, Globe, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import NotificationsCard from '@/components/common/NotificationsCard';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import RadixSelect from '@/components/ui/RadixSelect';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps { onToggleSidebar: () => void }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
   const { currentLanguage, setLanguage, t } = useLanguage();
+  const router = useRouter();
 
   const roleLabel = (role?: 'CF'|'DRB'|'DGB') => {
     if (!role) return '';
@@ -19,12 +21,15 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     return labels[currentLanguage][role];
   };
   return (
-    <header className="bg-brand-gradient text-white shadow-lg">
+    <header className="bg-brand-gradient text-white shadow-lg rounded-b-2xl overflow-hidden">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <button onClick={onToggleSidebar} className="p-2 rounded-md hover:bg-blue-500 transition-colors">
-              <div className="w-6 h-6 flex flex-col justify-center space-y-1">
+          <div className="flex items-center gap-3 pl-2">
+            <button onClick={() => router.back()} className="w-9 h-9 rounded-md bg-white/20 border border-white/30 flex items-center justify-center hover:bg-white/30 transition-colors ml-2" title="Retour">
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </button>
+            <button onClick={onToggleSidebar} className="w-9 h-9 rounded-md hover:bg-blue-500 transition-colors flex items-center justify-center" title="Menu">
+              <div className="w-5 h-5 flex flex-col justify-center space-y-1">
                 <div className="w-full h-0.5 bg-white"></div>
                 <div className="w-full h-0.5 bg-white"></div>
                 <div className="w-full h-0.5 bg-white"></div>
