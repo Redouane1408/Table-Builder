@@ -67,7 +67,7 @@ export default function TemplatesPage() {
               {canvases.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm">{c.period}</td>
-                  <td className="px-6 py-4 text-sm">{c.wilaya?.name}</td>
+                  <td className="px-6 py-4 text-sm">{c.wilaya?.name_fr || c.wilaya?.name_ar || (c.wilaya as any)?.name}</td>
                   <td className="px-6 py-4 text-sm">{c.status}</td>
                   <td className="px-6 py-4 text-sm">
                     <Link href={`/templates/${c.id}`} className="text-blue-600 hover:text-blue-800">Voir</Link>
@@ -96,7 +96,7 @@ export default function TemplatesPage() {
               {avenants.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm">{c.period}</td>
-                  <td className="px-6 py-4 text-sm">{c.wilaya?.name}</td>
+                  <td className="px-6 py-4 text-sm">{c.wilaya?.name_fr || c.wilaya?.name_ar || (c.wilaya as any)?.name}</td>
                   <td className="px-6 py-4 text-sm">{c.status}</td>
                   <td className="px-6 py-4 text-sm">
                     <Link href={`/templates/avenants/${c.id}`} className="text-blue-600 hover:text-blue-800">Voir</Link>

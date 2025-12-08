@@ -88,7 +88,7 @@ export default function TemplateDetail() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Éditer le Modèle</h1>
-            <p className="text-gray-600">Période: {canvas.period} • Wilaya: {canvas.wilaya?.name}</p>
+            <p className="text-gray-600">Période: {canvas.period} • Wilaya: {canvas.wilaya?.name_fr || canvas.wilaya?.name_ar || (canvas.wilaya as any)?.name}</p>
           </div>
           <div className="flex gap-2">
             <button className="px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-2">

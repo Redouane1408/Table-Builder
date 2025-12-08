@@ -10,8 +10,6 @@ export interface User {
 
 export interface Wilaya {
   id: string;
-  name: string;
-  code: string;
   drb_id?: string;
   name_fr?: string;
   name_ar?: string;
@@ -157,7 +155,7 @@ export interface DerivedCanvasColumn {
 
 export interface DerivedCanvas {
   id: string;
-  source_canva: 'marches' | 'avenants';
+  source_canva: 'marches' | 'avenants' | 'metadata';
   source_column_id: string;
   name_fr: string;
   name_ar: string;
@@ -180,4 +178,56 @@ export interface Commune {
 export interface NewUserResult {
   user: User;
   password: string;
+}
+
+export interface Portefeuille {
+  id: string;
+  code: string;
+  name_fr: string;
+  name_ar: string;
+  liste_programmes: Programme[];
+  liste_titres: TitreMeta[];
+}
+
+export interface Programme {
+  id: string;
+  code: string;
+  portefeuille_id: string;
+  name_fr: string;
+  name_ar: string;
+}
+
+export interface SousProgramme {
+  id: string;
+  code: string;
+  programme_id: string;
+  name_fr: string;
+  name_ar: string;
+}
+
+export interface ActionMeta {
+  id: string;
+  code: string;
+  description: string;
+  liste_sous_actions: SubActionMeta[];
+}
+export interface SubActionMeta {
+  id: string;
+  code: string;
+  description: string;
+}
+
+export interface TitreMeta {
+  id: string;
+  code: string;
+  portefeuille_id: string;
+  numero: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  name_fr: string;
+  name_ar: string;
+}
+
+export interface OperationMeta {
+  id: string;
+  code_concatenated: string;
+  number: number;
 }

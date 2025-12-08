@@ -33,6 +33,17 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
   const [formeOptions, setFormeOptions] = useState<string[]>([]);
   const [natureOptions, setNatureOptions] = useState<string[]>([]);
   const [modeOptions, setModeOptions] = useState<string[]>([]);
+  const [portefeuilles, setPortefeuilles] = useState<any[]>([]);
+  const [programmes, setProgrammes] = useState<any[]>([]);
+  const [sousProgrammes, setSousProgrammes] = useState<any[]>([]);
+  const [titres, setTitres] = useState<any[]>([]);
+  const [pfId, setPfId] = useState<string | undefined>(undefined);
+  const [progId, setProgId] = useState<string | undefined>(undefined);
+  const [spId, setSpId] = useState<string | undefined>(undefined);
+  const [actionName, setActionName] = useState<string>(initial?.dynamic_values?.action_label || '');
+  const [sousActionName, setSousActionName] = useState<string>(initial?.dynamic_values?.sous_action_label || '');
+  const [titreNumero, setTitreNumero] = useState<string | undefined>(undefined);
+  const [operationNumber, setOperationNumber] = useState<number | undefined>(undefined);
   const fetchCols = async () => { const cols = await mockApi.listDynamicColumns(); setDynCols(cols); };
   React.useEffect(() => { fetchCols(); }, []);
   React.useEffect(() => {
@@ -59,8 +70,53 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
     return () => window.removeEventListener('base-options-changed', handler as any);
   }, []);
 
+  React.useEffect(() => { (async () => {
+    const [pf, pr, sp] = await Promise.all([mockApi.listPortefeuilles(), mockApi.listProgrammes(), mockApi.listSousProgrammes()]);
+    setPortefeuilles(pf);
+    setProgrammes(pr);
+    setSousProgrammes(sp);
+  })(); }, []);
+  React.useEffect(() => { (async () => { if (!pfId) { setTitres([]); setTitreNumero(undefined); return; } const tts = await mockApi.listTitres(pfId); setTitres(tts); })(); }, [pfId]);
+  const filteredProgrammes = React.useMemo(() => programmes.filter((p:any) => !pfId || p.portefeuille_id === pfId), [programmes, pfId]);
+  const filteredSousProgrammes = React.useMemo(() => sousProgrammes.filter((s:any) => !progId || s.programme_id === progId), [sousProgrammes, progId]);
+
   return (
     <div className="space-y-4">
+      <div className="bg-white rounded-xl p-4 border">
+        <h4 className="text-sm font-semibold text-gray-900 mb-3">Données Programme</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Portefeuille</label>
+            <RadixSelect className="input-gradient" value={pfId as any} onChange={(v)=>setPfId(v as any)} options={portefeuilles.map((p:any)=>({ label: p.name_fr, value: String(p.id) })) as any} />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Programme</label>
+            <RadixSelect className="input-gradient" value={progId as any} onChange={(v)=>setProgId(v as any)} options={filteredProgrammes.map((p:any)=>({ label: p.name_fr, value: String(p.id) })) as any} />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Sous Programme</label>
+            <RadixSelect className="input-gradient" value={spId as any} onChange={(v)=>setSpId(v as any)} options={filteredSousProgrammes.map((s:any)=>({ label: s.name_fr, value: String(s.id) })) as any} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Action / Sous Action</label>
+            <input className="w-full px-3 py-2 rounded-lg input-gradient" value={actionName} onChange={(e)=>setActionName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Sous Action</label>
+            <input className="w-full px-3 py-2 rounded-lg input-gradient" value={sousActionName} onChange={(e)=>setSousActionName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Titre</label>
+            <RadixSelect className="input-gradient" value={titreNumero as any} onChange={(v)=>setTitreNumero(v as any)} options={titres.map((t:any)=>({ label: `Titre ${t.numero} — ${t.name_fr}`, value: String(t.numero) })) as any} />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">N° Opération</label>
+            <input type="number" className="w-full px-3 py-2 rounded-lg input-gradient" value={operationNumber ?? ''} onChange={(e)=>setOperationNumber(e.target.value ? Number(e.target.value) : undefined)} />
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm text-gray-700 mb-1">Service Contractant</label>
@@ -118,7 +174,7 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
         </div>
       </div>
       <div className="flex justify-end gap-2">
-        <button className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50" onClick={() => onSubmit({ ...form, dynamic_values: dynValues })}>Ajouter la ligne</button>
+        <button className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50" onClick={() => onSubmit({ ...form, dynamic_values: { ...dynValues, portefeuille_id: pfId, programme_id: progId, sous_programme_id: spId, action_label: actionName, sous_action_label: sousActionName, titre_numero: titreNumero ? Number(titreNumero) : undefined, operation_number: typeof operationNumber === 'number' ? operationNumber : undefined } })}>Ajouter la ligne</button>
       </div>
       {dynCols.length > 0 && (
         <div className="mt-6 space-y-4">

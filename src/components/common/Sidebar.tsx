@@ -23,8 +23,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   ].filter(i => i.roles.includes(user?.role || 'CF'));
 
   return (
-    <div className={`${isCollapsed ? 'w-18' : 'w-72'} glass-sidebar shadow-xl transition-all duration-300 flex flex-col`}>
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+    <div className={`${isCollapsed ? 'w-18' : 'w-72'} glass-sidebar shadow-xl transition-all duration-300 flex flex-col relative z-30`}>
+      <div className="p-2 border-b border-gray-200 flex items-center justify-between relative z-30">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold">{user?.email?.charAt(0).toUpperCase()}</div>
@@ -34,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
             </div>
           </div>
         )}
-        <button onClick={onToggle} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+        <button onClick={onToggle} className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative z-40">
           {isCollapsed ? (isRTL ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />) : (isRTL ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />)}
         </button>
       </div>

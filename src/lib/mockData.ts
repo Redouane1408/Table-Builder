@@ -1,11 +1,11 @@
-import { User, Wilaya, Canvas, Report, ChartData, CFCanvasData, CfContractRow, DynamicColumn, BaseCanvaColumn, AvenantCanvasData, AvenantRow, DerivedCanvas, DerivedCanvasColumn, DRB, Commune, NewUserResult } from './types';
+import { User, Wilaya, Canvas, Report, ChartData, CFCanvasData, CfContractRow, DynamicColumn, BaseCanvaColumn, AvenantCanvasData, AvenantRow, DerivedCanvas, DerivedCanvasColumn, DRB, Commune, NewUserResult, Portefeuille, Programme, SousProgramme, ActionMeta, TitreMeta, OperationMeta } from './types';
 
 export const mockWilayas: Wilaya[] = [
-  { id: '1', name: 'Algiers', code: 'DZ-16' },
-  { id: '2', name: 'Oran', code: 'DZ-31' },
-  { id: '3', name: 'Constantine', code: 'DZ-25' },
-  { id: '4', name: 'Annaba', code: 'DZ-23' },
-  { id: '5', name: 'Blida', code: 'DZ-09' },
+  { id: '1', name_fr: 'Algiers' },
+  { id: '2', name_fr: 'Oran' },
+  { id: '3', name_fr: 'Constantine' },
+  { id: '4', name_fr: 'Annaba' },
+  { id: '5', name_fr: 'Blida' },
 ];
 
 export const mockDRBs: DRB[] = [
@@ -22,6 +22,30 @@ export const mockCommunes: Commune[] = [
   { id: 'c-1', wilaya_id: '1', name_fr: 'Bab El Oued', name_ar: 'باب الوادي' },
   { id: 'c-2', wilaya_id: '1', name_fr: 'El Harrach', name_ar: 'الحراش' },
   { id: 'c-3', wilaya_id: '2', name_fr: 'Es Senia', name_ar: 'السانية' },
+];
+
+// Hierarchical programme metadata
+export const mockPortefeuilles: Portefeuille[] = [
+  { id: 'pf-1', name_fr: 'Santé', name_ar: 'الصحة' },
+  { id: 'pf-2', name_fr: 'Éducation', name_ar: 'التعليم' },
+];
+export const mockProgrammes: Programme[] = [
+  { id: 'pr-1', portefeuille_id: 'pf-1', name_fr: 'Hôpitaux', name_ar: 'المستشفيات' },
+  { id: 'pr-2', portefeuille_id: 'pf-2', name_fr: 'Écoles', name_ar: 'المدارس' },
+];
+export const mockSousProgrammes: SousProgramme[] = [
+  { id: 'sp-1', programme_id: 'pr-1', name_fr: 'Modernisation', name_ar: 'التحديث' },
+  { id: 'sp-2', programme_id: 'pr-2', name_fr: 'Construction', name_ar: 'البناء' },
+];
+export const mockActions: ActionMeta[] = [
+  { id: 'act-1', sous_programme_id: 'sp-1', name: 'Rénover bloc A' },
+];
+export const mockTitres: TitreMeta[] = [
+  { id: 'tt-1', portefeuille_id: 'pf-1', numero: 1, code: '20000', name_fr: 'Titre 1 Santé', name_ar: 'العنوان 1 الصحة' },
+  { id: 'tt-2', portefeuille_id: 'pf-2', numero: 1, code: '30000', name_fr: 'Titre 1 Éducation', name_ar: 'العنوان 1 التعليم' },
+];
+export const mockOperations: OperationMeta[] = [
+  { id: 'op-1', sous_programme_id: 'sp-1', number: 1001 },
 ];
 
 export const mockUsers: User[] = [
@@ -267,7 +291,7 @@ export const mockApi = {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const w = mockWilayas.find(x => x.id === wilaya_id);
-    const u: User = { id, email, role, wilaya_id, wilaya_name: w?.name || '', created_at: now, updated_at: now } as User;
+    const u: User = { id, email, role, wilaya_id, wilaya_name: w?.name_fr || w?.name_ar || '', created_at: now, updated_at: now } as User;
     mockUsers.push(u);
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
     let pwd = '';
@@ -280,7 +304,7 @@ export const mockApi = {
     if (idx === -1) throw new Error('User not found');
     const prev = mockUsers[idx];
     const nextWilaya = typeof patch.wilaya_id === 'string' ? mockWilayas.find(w => w.id === patch.wilaya_id) : undefined;
-    const next: User = { ...prev, ...patch, wilaya_name: nextWilaya ? nextWilaya.name : prev.wilaya_name, updated_at: new Date().toISOString() } as User;
+    const next: User = { ...prev, ...patch, wilaya_name: nextWilaya ? (nextWilaya.name_fr || nextWilaya.name_ar || prev.wilaya_name) : prev.wilaya_name, updated_at: new Date().toISOString() } as User;
     mockUsers[idx] = next;
     return next;
   },
@@ -590,14 +614,14 @@ export const mockApi = {
             if (typeof val === 'string' && counts.hasOwnProperty(val)) counts[val] += 1;
           }
         }
-        rows.push({ wilaya_id: w.id, wilaya_name: w.name, counts });
+        rows.push({ wilaya_id: w.id, wilaya_name: w.name_fr || w.name_ar || '', counts });
       }
       return rows;
     }
     for (const w of mockWilayas) {
       const counts: Record<string, number> = {};
       for (const col of dc.columns) counts[col.key] = 0;
-      rows.push({ wilaya_id: w.id, wilaya_name: w.name, counts });
+      rows.push({ wilaya_id: w.id, wilaya_name: w.name_fr || w.name_ar || '', counts });
     }
     return rows;
   },
@@ -620,14 +644,14 @@ export const mockApi = {
             if (typeof val === 'string' && sums.hasOwnProperty(val)) sums[val] += (row.montant_final_marche_dzd || 0);
           }
         }
-        rows.push({ wilaya_id: w.id, wilaya_name: w.name, counts: sums });
+        rows.push({ wilaya_id: w.id, wilaya_name: w.name_fr || w.name_ar || '', counts: sums });
       }
       return rows;
     }
     for (const w of mockWilayas) {
       const sums: Record<string, number> = {};
       for (const col of dc.columns) sums[col.key] = 0;
-      rows.push({ wilaya_id: w.id, wilaya_name: w.name, counts: sums });
+      rows.push({ wilaya_id: w.id, wilaya_name: w.name_fr || w.name_ar || '', counts: sums });
     }
     return rows;
   },
@@ -721,12 +745,45 @@ export const mockApi = {
   deleteDRB: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockDRBs.findIndex(d => d.id === id); if (idx !== -1) mockDRBs.splice(idx, 1); for (const w of mockWilayas) if (w.drb_id === id) w.drb_id = undefined; },
 
   listWilayas: async (): Promise<Wilaya[]> => { await new Promise(r => setTimeout(r, 50)); return [...mockWilayas]; },
-  addWilaya: async (name_fr: string, name_ar: string, code: string, drb_id?: string): Promise<Wilaya> => { await new Promise(r => setTimeout(r, 80)); const w: Wilaya = { id: crypto.randomUUID(), name: name_fr, name_fr, name_ar, code, drb_id }; mockWilayas.push(w); return w; },
-  updateWilaya: async (id: string, patch: Partial<Pick<Wilaya,'name_fr'|'name_ar'|'code'|'drb_id'>>): Promise<Wilaya> => { await new Promise(r => setTimeout(r, 80)); const idx = mockWilayas.findIndex(w => w.id === id); if (idx === -1) throw new Error('Wilaya not found'); const next = { ...mockWilayas[idx], ...patch } as Wilaya; if (patch.name_fr) next.name = patch.name_fr; mockWilayas[idx] = next; return next; },
+  addWilaya: async (name_fr: string, name_ar: string, drb_id?: string): Promise<Wilaya> => { await new Promise(r => setTimeout(r, 80)); const w: Wilaya = { id: crypto.randomUUID(), name_fr, name_ar, ...(drb_id ? { drb_id } : {}) }; mockWilayas.push(w); return w; },
+  updateWilaya: async (id: string, patch: Partial<Pick<Wilaya,'name_fr'|'name_ar'|'drb_id'>>): Promise<Wilaya> => { await new Promise(r => setTimeout(r, 80)); const idx = mockWilayas.findIndex(w => w.id === id); if (idx === -1) throw new Error('Wilaya not found'); const next = { ...mockWilayas[idx], ...patch } as Wilaya; mockWilayas[idx] = next; return next; },
   deleteWilaya: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockWilayas.findIndex(w => w.id === id); if (idx !== -1) mockWilayas.splice(idx, 1); for (let i = mockCommunes.length - 1; i >= 0; i--) if (mockCommunes[i].wilaya_id === id) mockCommunes.splice(i, 1); },
 
   listCommunes: async (wilaya_id?: string): Promise<Commune[]> => { await new Promise(r => setTimeout(r, 50)); const arr = [...mockCommunes]; return wilaya_id ? arr.filter(c => c.wilaya_id === wilaya_id) : arr; },
   addCommune: async (wilaya_id: string, name_fr: string, name_ar: string): Promise<Commune> => { await new Promise(r => setTimeout(r, 80)); const c: Commune = { id: crypto.randomUUID(), wilaya_id, name_fr, name_ar }; mockCommunes.push(c); return c; },
   updateCommune: async (id: string, patch: Partial<Pick<Commune,'name_fr'|'name_ar'|'wilaya_id'>>): Promise<Commune> => { await new Promise(r => setTimeout(r, 80)); const idx = mockCommunes.findIndex(c => c.id === id); if (idx === -1) throw new Error('Commune not found'); const next = { ...mockCommunes[idx], ...patch } as Commune; mockCommunes[idx] = next; return next; },
   deleteCommune: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockCommunes.findIndex(c => c.id === id); if (idx !== -1) mockCommunes.splice(idx, 1); },
+
+  // Programme hierarchy (mock)
+  listPortefeuilles: async (): Promise<Portefeuille[]> => { await new Promise(r => setTimeout(r, 50)); return [...mockPortefeuilles]; },
+  addPortefeuille: async (name_fr: string, name_ar: string): Promise<Portefeuille> => { await new Promise(r => setTimeout(r, 80)); const pf: Portefeuille = { id: crypto.randomUUID(), name_fr, name_ar }; mockPortefeuilles.push(pf); return pf; },
+  updatePortefeuille: async (id: string, patch: Partial<Pick<Portefeuille,'name_fr'|'name_ar'>>): Promise<Portefeuille> => { await new Promise(r => setTimeout(r, 80)); const idx = mockPortefeuilles.findIndex(p => p.id === id); if (idx === -1) throw new Error('Portefeuille not found'); const next = { ...mockPortefeuilles[idx], ...patch } as Portefeuille; mockPortefeuilles[idx] = next; return next; },
+  deletePortefeuille: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockPortefeuilles.findIndex(p => p.id === id); if (idx !== -1) mockPortefeuilles.splice(idx, 1); for (let i = mockProgrammes.length - 1; i >= 0; i--) if (mockProgrammes[i].portefeuille_id === id) mockProgrammes.splice(i, 1); for (let i = mockTitres.length - 1; i >= 0; i--) if (mockTitres[i].portefeuille_id === id) mockTitres.splice(i, 1); },
+
+  listProgrammes: async (portefeuille_id?: string): Promise<Programme[]> => { await new Promise(r => setTimeout(r, 50)); const arr = [...mockProgrammes]; return portefeuille_id ? arr.filter(p => p.portefeuille_id === portefeuille_id) : arr; },
+  addProgramme: async (portefeuille_id: string, name_fr: string, name_ar: string): Promise<Programme> => { await new Promise(r => setTimeout(r, 80)); const pr: Programme = { id: crypto.randomUUID(), portefeuille_id, name_fr, name_ar }; mockProgrammes.push(pr); return pr; },
+  updateProgramme: async (id: string, patch: Partial<Pick<Programme,'name_fr'|'name_ar'|'portefeuille_id'>>): Promise<Programme> => { await new Promise(r => setTimeout(r, 80)); const idx = mockProgrammes.findIndex(p => p.id === id); if (idx === -1) throw new Error('Programme not found'); const next = { ...mockProgrammes[idx], ...patch } as Programme; mockProgrammes[idx] = next; return next; },
+  deleteProgramme: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockProgrammes.findIndex(p => p.id === id); if (idx !== -1) mockProgrammes.splice(idx, 1); for (let i = mockSousProgrammes.length - 1; i >= 0; i--) if (mockSousProgrammes[i].programme_id === id) mockSousProgrammes.splice(i, 1); },
+
+  listSousProgrammes: async (programme_id?: string): Promise<SousProgramme[]> => { await new Promise(r => setTimeout(r, 50)); const arr = [...mockSousProgrammes]; return programme_id ? arr.filter(sp => sp.programme_id === programme_id) : arr; },
+  addSousProgramme: async (programme_id: string, name_fr: string, name_ar: string): Promise<SousProgramme> => { await new Promise(r => setTimeout(r, 80)); const sp: SousProgramme = { id: crypto.randomUUID(), programme_id, name_fr, name_ar }; mockSousProgrammes.push(sp); return sp; },
+  updateSousProgramme: async (id: string, patch: Partial<Pick<SousProgramme,'name_fr'|'name_ar'|'programme_id'>>): Promise<SousProgramme> => { await new Promise(r => setTimeout(r, 80)); const idx = mockSousProgrammes.findIndex(s => s.id === id); if (idx === -1) throw new Error('Sous Programme not found'); const next = { ...mockSousProgrammes[idx], ...patch } as SousProgramme; mockSousProgrammes[idx] = next; return next; },
+  deleteSousProgramme: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockSousProgrammes.findIndex(s => s.id === id); if (idx !== -1) mockSousProgrammes.splice(idx, 1); for (let i = mockActions.length - 1; i >= 0; i--) if (mockActions[i].sous_programme_id === id) mockActions.splice(i, 1); for (let i = mockOperations.length - 1; i >= 0; i--) if (mockOperations[i].sous_programme_id === id) mockOperations.splice(i, 1); },
+
+  listActions: async (sous_programme_id?: string): Promise<ActionMeta[]> => { await new Promise(r => setTimeout(r, 50)); const arr = [...mockActions]; return sous_programme_id ? arr.filter(a => a.sous_programme_id === sous_programme_id) : arr; },
+  addAction: async (sous_programme_id: string, name: string): Promise<ActionMeta> => { await new Promise(r => setTimeout(r, 80)); const a: ActionMeta = { id: crypto.randomUUID(), sous_programme_id, name }; mockActions.push(a); return a; },
+  updateAction: async (id: string, patch: Partial<Pick<ActionMeta,'name'|'sous_programme_id'>>): Promise<ActionMeta> => { await new Promise(r => setTimeout(r, 80)); const idx = mockActions.findIndex(a => a.id === id); if (idx === -1) throw new Error('Action not found'); const next = { ...mockActions[idx], ...patch } as ActionMeta; mockActions[idx] = next; return next; },
+  deleteAction: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockActions.findIndex(a => a.id === id); if (idx !== -1) mockActions.splice(idx, 1); },
+
+  listTitres: async (portefeuille_id?: string): Promise<TitreMeta[]> => { await new Promise(r => setTimeout(r, 50)); const arr = [...mockTitres]; return portefeuille_id ? arr.filter(t => t.portefeuille_id === portefeuille_id) : arr; },
+  getTitre: async (portefeuille_id: string, numero: 1|2|3|4|5|6|7): Promise<TitreMeta | undefined> => { await new Promise(r => setTimeout(r, 40)); return mockTitres.find(x => x.portefeuille_id === portefeuille_id && x.numero === numero); },
+  addTitre: async (portefeuille_id: string, numero: 1|2|3|4|5|6|7, name_fr: string, name_ar: string, code: string): Promise<TitreMeta> => { await new Promise(r => setTimeout(r, 80)); const existing = mockTitres.find(x => x.portefeuille_id === portefeuille_id && x.numero === numero); if (existing) return { ...existing }; const t: TitreMeta = { id: crypto.randomUUID(), portefeuille_id, numero, name_fr, name_ar, code: code.padStart(5,'0').slice(0,5) }; mockTitres.push(t); return t; },
+  updateTitre: async (portefeuille_id: string, numero: 1|2|3|4|5|6|7, name_fr: string, name_ar: string, code: string): Promise<TitreMeta> => { await new Promise(r => setTimeout(r, 80)); const t = mockTitres.find(x => x.portefeuille_id === portefeuille_id && x.numero === numero); if (!t) { const created: TitreMeta = { id: crypto.randomUUID(), portefeuille_id, numero, name_fr, name_ar, code: code.padStart(5,'0').slice(0,5) }; mockTitres.push(created); return created; } t.name_fr = name_fr; t.name_ar = name_ar; t.code = code.padStart(5,'0').slice(0,5); return { ...t }; },
+  setTitre: async (portefeuille_id: string, numero: 1|2|3|4|5|6|7, name_fr: string, name_ar: string, code?: string): Promise<TitreMeta> => { await new Promise(r => setTimeout(r, 80)); let t = mockTitres.find(x => x.portefeuille_id === portefeuille_id && x.numero === numero); if (t) { t.name_fr = name_fr; t.name_ar = name_ar; if (typeof code === 'string') t.code = code.padStart(5,'0').slice(0,5); return { ...t }; } t = { id: crypto.randomUUID(), portefeuille_id, numero, name_fr, name_ar, code: (code ?? '00000').padStart(5,'0').slice(0,5) }; mockTitres.push(t); return t; },
+  deleteTitre: async (portefeuille_id: string, numero: 1|2|3|4|5|6|7): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockTitres.findIndex(t => t.portefeuille_id === portefeuille_id && t.numero === numero); if (idx !== -1) mockTitres.splice(idx, 1); },
+
+  listOperations: async (sous_programme_id?: string): Promise<OperationMeta[]> => { await new Promise(r => setTimeout(r, 50)); const arr = [...mockOperations]; return sous_programme_id ? arr.filter(o => o.sous_programme_id === sous_programme_id) : arr; },
+  addOperation: async (sous_programme_id: string, number: number): Promise<OperationMeta> => { await new Promise(r => setTimeout(r, 80)); const op: OperationMeta = { id: crypto.randomUUID(), sous_programme_id, number }; mockOperations.push(op); return op; },
+  updateOperation: async (id: string, patch: Partial<Pick<OperationMeta,'number'|'sous_programme_id'>>): Promise<OperationMeta> => { await new Promise(r => setTimeout(r, 80)); const idx = mockOperations.findIndex(o => o.id === id); if (idx === -1) throw new Error('Opération not found'); const next = { ...mockOperations[idx], ...patch } as OperationMeta; mockOperations[idx] = next; return next; },
+  deleteOperation: async (id: string): Promise<void> => { await new Promise(r => setTimeout(r, 80)); const idx = mockOperations.findIndex(o => o.id === id); if (idx !== -1) mockOperations.splice(idx, 1); },
 };

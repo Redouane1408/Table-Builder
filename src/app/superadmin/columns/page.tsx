@@ -61,6 +61,7 @@ export default function SuperAdminColumnsPage() {
           <Tabs.List className="inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-700">
             <Tabs.Trigger value="marches" className={`px-4 py-2 rounded-md ${canva==='marches' ? 'bg-white shadow text-gray-900' : 'hover:bg-gray-200'}`}>Canva des Marchés</Tabs.Trigger>
             <Tabs.Trigger value="avenants" className={`px-4 py-2 rounded-md ${canva==='avenants' ? 'bg-white shadow text-gray-900' : 'hover:bg-gray-200'}`}>Canva des Avenants</Tabs.Trigger>
+          
           </Tabs.List>
         </Tabs.Root>
         <Tabs.Root value={view} onValueChange={(v)=>setView(v as any)} className="space-y-6">
@@ -85,10 +86,12 @@ export default function SuperAdminColumnsPage() {
                     <input value={nameFr} onChange={(e) => setNameFr(e.target.value)} placeholder="Nom FR de la colonne" className="w-full px-3 py-2 border rounded-lg" />
                     <input value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder="Nom AR de la colonne" className="w-full px-3 py-2 border rounded-lg" />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <input value={dcNameFr} onChange={(e)=>setDcNameFr(e.target.value)} placeholder="Titre FR du canvas dérivé" className="w-full px-3 py-2 border rounded-lg" />
-                    <input value={dcNameAr} onChange={(e)=>setDcNameAr(e.target.value)} placeholder="Titre AR du canvas dérivé" className="w-full px-3 py-2 border rounded-lg" />
-                  </div>
+                  {type === 'dropdown' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input value={dcNameFr} onChange={(e)=>setDcNameFr(e.target.value)} placeholder="Titre FR du canvas dérivé" className="w-full px-3 py-2 border rounded-lg" />
+                      <input value={dcNameAr} onChange={(e)=>setDcNameAr(e.target.value)} placeholder="Titre AR du canvas dérivé" className="w-full px-3 py-2 border rounded-lg" />
+                    </div>
+                  )}
                   <RadixSelect value={type} onChange={(v)=>setType(v as any)} options={["string","dropdown","percentage","amount_dzd","amount_fx"]} />
                   {type === 'dropdown' && (
                     <div className="space-y-2">
@@ -384,35 +387,164 @@ function MetadataManager() {
   const [drbs, setDrbs] = React.useState<any[]>([]);
   const [wilayas, setWilayas] = React.useState<any[]>([]);
   const [communes, setCommunes] = React.useState<any[]>([]);
+  const [portefeuilles, setPortefeuilles] = React.useState<any[]>([]);
+  const [programmes, setProgrammes] = React.useState<any[]>([]);
+  const [sousProgrammes, setSousProgrammes] = React.useState<any[]>([]);
+  const [actions, setActions] = React.useState<any[]>([]);
+  const [titres, setTitres] = React.useState<any[]>([]);
+  const [operations, setOperations] = React.useState<any[]>([]);
   const [newDrbFr, setNewDrbFr] = React.useState("");
   const [newDrbAr, setNewDrbAr] = React.useState("");
   const [newWilayaFr, setNewWilayaFr] = React.useState("");
   const [newWilayaAr, setNewWilayaAr] = React.useState("");
-  const [newWilayaCode, setNewWilayaCode] = React.useState("");
   const [newWilayaDrb, setNewWilayaDrb] = React.useState<string | undefined>(undefined);
   const [newCommuneFr, setNewCommuneFr] = React.useState("");
   const [newCommuneAr, setNewCommuneAr] = React.useState("");
   const [newCommuneWilaya, setNewCommuneWilaya] = React.useState<string | undefined>(undefined);
   const [qWilaya, setQWilaya] = React.useState("");
   const [qCommune, setQCommune] = React.useState("");
+  const [newPfFr, setNewPfFr] = React.useState("");
+  const [newPfAr, setNewPfAr] = React.useState("");
+  const [newPfTitres, setNewPfTitres] = React.useState<number[]>([]);
+  const [newProgFr, setNewProgFr] = React.useState("");
+  const [newProgAr, setNewProgAr] = React.useState("");
+  const [newProgPf, setNewProgPf] = React.useState<string | undefined>(undefined);
+  const [newSpFr, setNewSpFr] = React.useState("");
+  const [newSpAr, setNewSpAr] = React.useState("");
+  const [newSpProg, setNewSpProg] = React.useState<string | undefined>(undefined);
+  const [newActionName, setNewActionName] = React.useState("");
+  const [newActionSp, setNewActionSp] = React.useState<string | undefined>(undefined);
+  const [titrePf, setTitrePf] = React.useState<string | undefined>(undefined);
+  const [titreInputs, setTitreInputs] = React.useState<Record<number, { fr: string; ar: string; code: string }>>({});
+  const [titreAddNum, setTitreAddNum] = React.useState<string | undefined>(undefined);
+  const [titreAddFr, setTitreAddFr] = React.useState("");
+  const [titreAddAr, setTitreAddAr] = React.useState("");
+  const [titreAddCode, setTitreAddCode] = React.useState("");
+  const [newOpSp, setNewOpSp] = React.useState<string | undefined>(undefined);
+  const [newOpNumber, setNewOpNumber] = React.useState<number | undefined>(undefined);
+  const [communesWilayaId, setCommunesWilayaId] = React.useState<string | undefined>(undefined);
 
+  const API_BASE = "/api";
+  const headers = { "Content-Type": "application/json", Accept: "application/json" } as const;
+  const unwrap = async (res: Response) => {
+    const j = await res.json().catch(() => ({}));
+    return typeof j?.data !== 'undefined' ? j.data : j;
+  };
+  const loadCommunesForWilaya = async (wilayaId?: string) => {
+    if (!wilayaId) { setCommunes([]); return; }
+    const res = await fetch(`${API_BASE}/wilayas/${wilayaId}/communes`, { headers });
+    const data = await unwrap(res);
+    setCommunes(Array.isArray(data) ? data.map((c: any) => ({ id: String(c.id ?? c.communeId ?? crypto.randomUUID()), wilaya_id: String(c.wilayaId ?? c.wilaya_id ?? ''), name_fr: c.communeFr ?? c.name_fr ?? c.name ?? '', name_ar: c.communeAr ?? c.name_ar ?? '' })) : []);
+  };
   React.useEffect(() => { (async () => {
-    setDrbs(await mockApi.listDRBs());
-    setWilayas(await mockApi.listWilayas());
-    setCommunes(await mockApi.listCommunes());
+    try {
+      const drbRes = await fetch(`${API_BASE}/drbs`, { headers });
+      const drbData = await unwrap(drbRes);
+      setDrbs(Array.isArray(drbData) ? drbData.map((d: any) => ({ id: String(d.id ?? d.drbId ?? crypto.randomUUID()), name_fr: d.name_fr || d.drbFr || d.name || '', name_ar: d.name_ar || d.drbAr || '' })) : []);
+    } catch {}
+    try {
+      const wilRes = await fetch(`${API_BASE}/wilayas`, { headers });
+      const wilData = await unwrap(wilRes);
+      const mapped = Array.isArray(wilData) ? wilData.map((w: any) => ({ id: String(w.id ?? w.wilayaId ?? crypto.randomUUID()), name_fr: w.wilayaNomFR ?? w.name_fr ?? w.wilayaFr ?? w.name ?? '', name_ar: w.wilayaNomAR ?? w.name_ar ?? w.wilayaAr ?? '', drb_id: String(w.drbId ?? w.drb_id ?? '') })) : [];
+      setWilayas(mapped);
+      setCommunesWilayaId(mapped[0]?.id);
+    } catch {}
+    try {
+      const pf = await mockApi.listPortefeuilles();
+      setPortefeuilles(pf.map(p => ({ id: p.id, name_fr: p.name_fr, name_ar: p.name_ar })));
+      const pr = await mockApi.listProgrammes();
+      setProgrammes(pr.map(p => ({ id: p.id, portefeuille_id: p.portefeuille_id, name_fr: p.name_fr, name_ar: p.name_ar })));
+      const sp = await mockApi.listSousProgrammes();
+      setSousProgrammes(sp.map(s => ({ id: s.id, programme_id: s.programme_id, name_fr: s.name_fr, name_ar: s.name_ar })));
+      const acts = await mockApi.listActions();
+      setActions(acts.map(a => ({ id: a.id, sous_programme_id: a.sous_programme_id, name: a.name })));
+      const tts = await mockApi.listTitres();
+      setTitres(tts.map(t => ({ id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: (t as any).code })));
+      const ops = await mockApi.listOperations();
+      setOperations(ops.map(o => ({ id: o.id, sous_programme_id: o.sous_programme_id, number: o.number })));
+    } catch {}
   })(); }, []);
 
-  const addDrb = async () => { const d = await mockApi.addDRB(newDrbFr.trim(), newDrbAr.trim()); setDrbs(prev => [...prev, d]); setNewDrbFr(""); setNewDrbAr(""); };
-  const updateDrb = async (id: string, fr: string, ar: string) => { const d = await mockApi.updateDRB(id, fr, ar); setDrbs(prev => prev.map(x => x.id === id ? d : x)); };
-  const deleteDrb = async (id: string) => { await mockApi.deleteDRB(id); setDrbs(prev => prev.filter(x => x.id !== id)); setWilayas(await mockApi.listWilayas()); };
+  React.useEffect(() => { (async () => { await loadCommunesForWilaya(communesWilayaId); })(); }, [communesWilayaId]);
 
-  const addWilaya = async () => { if (!newWilayaFr.trim() || !newWilayaCode.trim()) return; const w = await mockApi.addWilaya(newWilayaFr.trim(), newWilayaAr.trim(), newWilayaCode.trim(), newWilayaDrb); setWilayas(prev => [...prev, w]); setNewWilayaFr(""); setNewWilayaAr(""); setNewWilayaCode(""); setNewWilayaDrb(undefined); };
-  const updateWilaya = async (id: string, patch: any) => { const w = await mockApi.updateWilaya(id, patch); setWilayas(prev => prev.map(x => x.id === id ? w : x)); };
-  const deleteWilaya = async (id: string) => { await mockApi.deleteWilaya(id); setWilayas(prev => prev.filter(x => x.id !== id)); setCommunes(await mockApi.listCommunes()); };
+  const addDrb = async () => { const res = await fetch(`${API_BASE}/drbs`, { method: 'POST', headers, body: JSON.stringify({ drbFr: newDrbFr.trim(), drbAr: newDrbAr.trim() }) }); const d = await unwrap(res); setDrbs(prev => [...prev, { id: d.id, name_fr: d.drbFr || d.name_fr || newDrbFr, name_ar: d.drbAr || d.name_ar || newDrbAr }]); setNewDrbFr(""); setNewDrbAr(""); };
+  const updateDrb = async (id: string, fr: string, ar: string) => { const res = await fetch(`${API_BASE}/drbs/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ id, drbFr: fr, drbAr: ar }) }); const d = await unwrap(res); setDrbs(prev => prev.map(x => x.id === id ? { ...x, name_fr: d.drbFr || fr, name_ar: d.drbAr || ar } : x)); };
+  const deleteDrb = async (id: string) => { await fetch(`${API_BASE}/drbs/${id}`, { method: 'DELETE', headers, body: JSON.stringify({ id }) }); setDrbs(prev => prev.filter(x => x.id !== id)); const wilRes = await fetch(`${API_BASE}/wilayas`, { headers }); const wilData = await unwrap(wilRes); setWilayas(Array.isArray(wilData) ? wilData.map((w: any) => ({ id: w.id ?? w.wilayaId, name_fr: w.wilayaNomFR ?? w.wilayaFr ?? w.name_fr ?? w.name, name_ar: w.wilayaNomAR ?? w.wilayaAr ?? w.name_ar ?? '', drb_id: w.drbId ?? w.drb_id })) : []); };
 
-  const addCommune = async () => { if (!newCommuneWilaya || !newCommuneFr.trim()) return; const c = await mockApi.addCommune(newCommuneWilaya, newCommuneFr.trim(), newCommuneAr.trim()); setCommunes(prev => [...prev, c]); setNewCommuneFr(""); setNewCommuneAr(""); setNewCommuneWilaya(undefined); };
-  const updateCommune = async (id: string, patch: any) => { const c = await mockApi.updateCommune(id, patch); setCommunes(prev => prev.map(x => x.id === id ? c : x)); };
-  const deleteCommune = async (id: string) => { await mockApi.deleteCommune(id); setCommunes(prev => prev.filter(x => x.id !== id)); };
+  const addWilaya = async () => { if (!newWilayaFr.trim()) return; const res = await fetch(`${API_BASE}/wilayas`, { method: 'POST', headers, body: JSON.stringify({ wilayaNomFR: newWilayaFr.trim(), wilayaNomAR: newWilayaAr.trim(), drbId: Number(newWilayaDrb) }) }); const w = await unwrap(res); setWilayas(prev => [...prev, { id: String(w.id ?? w.wilayaId ?? crypto.randomUUID()), name_fr: w.wilayaNomFR ?? w.wilayaFr ?? w.name_fr ?? newWilayaFr, name_ar: w.wilayaNomAR ?? w.wilayaAr ?? w.name_ar ?? newWilayaAr, drb_id: String(w.drbId ?? w.drb_id ?? newWilayaDrb ?? '') }]); setNewWilayaFr(""); setNewWilayaAr(""); setNewWilayaDrb(undefined); };
+  const updateWilaya = async (id: string, patch: any) => { const res = await fetch(`${API_BASE}/wilayas/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ id: Number(id), wilayaNomFR: patch.name_fr, wilayaNomAR: patch.name_ar, drbId: Number(patch.drb_id) }) }); const w = await unwrap(res); setWilayas(prev => prev.map(x => x.id === id ? { ...x, name_fr: w.wilayaNomFR ?? w.wilayaFr ?? x.name_fr, name_ar: w.wilayaNomAR ?? w.wilayaAr ?? x.name_ar, drb_id: String(w.drbId ?? x.drb_id ?? '') } : x)); };
+  const deleteWilaya = async (id: string) => { await fetch(`${API_BASE}/wilayas/${id}`, { method: 'DELETE', headers, body: JSON.stringify({ id }) }); setWilayas(prev => prev.filter(x => x.id !== id)); await loadCommunesForWilaya(communesWilayaId); };
+
+  const addCommune = async () => {
+    if (!newCommuneWilaya || !newCommuneFr.trim()) return;
+    const res = await fetch(`${API_BASE}/communes`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ communeFr: newCommuneFr.trim(), communeAr: newCommuneAr.trim(), wilayaId: Number(newCommuneWilaya) })
+    });
+    const c = await unwrap(res);
+    const id = String(c?.id ?? c?.communeId ?? crypto.randomUUID());
+    if (String(c.wilayaId ?? newCommuneWilaya) === String(communesWilayaId)) {
+      setCommunes(prev => [...prev, { id, wilaya_id: String(c.wilayaId ?? newCommuneWilaya), name_fr: c.communeFr || newCommuneFr, name_ar: c.communeAr || newCommuneAr }]);
+    }
+    setNewCommuneFr("");
+    setNewCommuneAr("");
+    setNewCommuneWilaya(undefined);
+    await loadCommunesForWilaya(communesWilayaId);
+  };
+  const updateCommune = async (id: string, patch: any) => {
+    const current = communes.find(x => x.id === id);
+    const body = {
+      id: Number(id),
+      communeFr: patch?.name_fr ?? current?.name_fr ?? '',
+      communeAr: patch?.name_ar ?? current?.name_ar ?? '',
+      wilayaId: Number(patch?.wilaya_id ?? current?.wilaya_id ?? 0),
+    };
+    const res = await fetch(`${API_BASE}/communes/${id}`, { method: 'PATCH', headers, body: JSON.stringify(body) });
+    const c = await unwrap(res);
+    setCommunes(prev => prev.map(x => x.id === id ? { ...x, wilaya_id: String(c.wilayaId ?? body.wilayaId), name_fr: c.communeFr ?? body.communeFr, name_ar: c.communeAr ?? body.communeAr } : x));
+    await loadCommunesForWilaya(communesWilayaId);
+  };
+  const deleteCommune = async (id: string) => { await fetch(`${API_BASE}/communes/${id}`, { method: 'DELETE', headers, body: JSON.stringify({ id: Number(id) }) }); setCommunes(prev => prev.filter(x => x.id !== id)); await loadCommunesForWilaya(communesWilayaId); };
+
+  const addPf = async () => { if (!newPfFr.trim()) return; const p = await mockApi.addPortefeuille(newPfFr.trim(), newPfAr.trim()); setPortefeuilles(prev => [...prev, { id: p.id, name_fr: p.name_fr, name_ar: p.name_ar }]);
+    for (const n of newPfTitres) { const t = await mockApi.setTitre(p.id, n as any, `Titre ${n}`, ""); }
+    const tts = await mockApi.listTitres(p.id); setTitres(prev => [...prev, ...tts.filter(x => x.portefeuille_id === p.id)]);
+    setNewPfTitres([]); setNewPfFr(""); setNewPfAr(""); };
+  const togglePfTitre = async (pfId: string, num: number, on: boolean) => {
+    if (on) { const t = await mockApi.setTitre(pfId, num as any, `Titre ${num}`, "", "00000"); setTitres(prev => { const idx = prev.findIndex((x:any)=> x.portefeuille_id===pfId && x.numero===num); if (idx!==-1) { const next=[...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); }
+    else { await mockApi.deleteTitre(pfId, num as any); setTitres(prev => prev.filter((x:any)=> !(x.portefeuille_id===pfId && x.numero===num))); }
+  };
+  const updatePf = async (id: string, patch: any) => { const p = await mockApi.updatePortefeuille(id, { name_fr: patch.name_fr, name_ar: patch.name_ar }); setPortefeuilles(prev => prev.map(x => x.id === id ? { ...x, name_fr: p.name_fr, name_ar: p.name_ar } : x)); };
+  const deletePf = async (id: string) => { await mockApi.deletePortefeuille(id); setPortefeuilles(prev => prev.filter(x => x.id !== id)); setProgrammes(prev => prev.filter(x => x.portefeuille_id !== id)); setTitres(prev => prev.filter(x => x.portefeuille_id !== id)); };
+
+  const addProg = async () => { if (!newProgPf || !newProgFr.trim()) return; const pr = await mockApi.addProgramme(newProgPf, newProgFr.trim(), newProgAr.trim()); setProgrammes(prev => [...prev, { id: pr.id, portefeuille_id: pr.portefeuille_id, name_fr: pr.name_fr, name_ar: pr.name_ar }]); setNewProgFr(""); setNewProgAr(""); setNewProgPf(undefined); };
+  const updateProg = async (id: string, patch: any) => { const pr = await mockApi.updateProgramme(id, { name_fr: patch.name_fr, name_ar: patch.name_ar, portefeuille_id: patch.portefeuille_id }); setProgrammes(prev => prev.map(x => x.id === id ? { ...x, name_fr: pr.name_fr ?? x.name_fr, name_ar: pr.name_ar ?? x.name_ar, portefeuille_id: pr.portefeuille_id ?? x.portefeuille_id } : x)); };
+  const deleteProg = async (id: string) => { await mockApi.deleteProgramme(id); setProgrammes(prev => prev.filter(x => x.id !== id)); setSousProgrammes(prev => prev.filter(x => x.programme_id !== id)); };
+
+  const addSp = async () => { if (!newSpProg || !newSpFr.trim()) return; const sp = await mockApi.addSousProgramme(newSpProg, newSpFr.trim(), newSpAr.trim()); setSousProgrammes(prev => [...prev, { id: sp.id, programme_id: sp.programme_id, name_fr: sp.name_fr, name_ar: sp.name_ar }]); setNewSpFr(""); setNewSpAr(""); setNewSpProg(undefined); };
+  const updateSp = async (id: string, patch: any) => { const sp = await mockApi.updateSousProgramme(id, { name_fr: patch.name_fr, name_ar: patch.name_ar, programme_id: patch.programme_id }); setSousProgrammes(prev => prev.map(x => x.id === id ? { ...x, name_fr: sp.name_fr ?? x.name_fr, name_ar: sp.name_ar ?? x.name_ar, programme_id: sp.programme_id ?? x.programme_id } : x)); };
+  const deleteSp = async (id: string) => { await mockApi.deleteSousProgramme(id); setSousProgrammes(prev => prev.filter(x => x.id !== id)); setActions(prev => prev.filter(x => x.sous_programme_id !== id)); setOperations(prev => prev.filter(x => x.sous_programme_id !== id)); };
+
+  const addActionMeta = async () => { if (!newActionSp || !newActionName.trim()) return; const a = await mockApi.addAction(newActionSp, newActionName.trim()); setActions(prev => [...prev, { id: a.id, sous_programme_id: a.sous_programme_id, name: a.name }]); setNewActionName(""); setNewActionSp(undefined); };
+  const updateActionMeta = async (id: string, patch: any) => { const a = await mockApi.updateAction(id, { name: patch.name, sous_programme_id: patch.sous_programme_id }); setActions(prev => prev.map(x => x.id === id ? { ...x, name: a.name ?? x.name, sous_programme_id: a.sous_programme_id ?? x.sous_programme_id } : x)); };
+  const deleteActionMeta = async (id: string) => { await mockApi.deleteAction(id); setActions(prev => prev.filter(x => x.id !== id)); };
+
+  const loadTitresForPf = (pfId: string) => {
+    setTitrePf(pfId);
+    const map: Record<number, { fr: string; ar: string; code: string }> = {};
+    for (let n = 1; n <= 7; n++) {
+      const t = titres.find((x:any) => x.portefeuille_id === pfId && x.numero === n);
+      map[n] = { fr: t?.name_fr || '', ar: t?.name_ar || '', code: t?.code || '' };
+    }
+    setTitreInputs(map);
+  };
+  const saveTitre = async (numero: number) => { if (!titrePf) return; const vals = titreInputs[numero] || { fr: '', ar: '', code: '' }; const code = (vals.code || '').replace(/\D/g,'').slice(0,5); if (!vals.fr.trim() && !vals.ar.trim() && !code) { await mockApi.deleteTitre(titrePf, numero as any); setTitres(prev => prev.filter((x:any) => !(x.portefeuille_id === titrePf && x.numero === numero))); setTitreInputs(prev => ({ ...prev, [numero]: { fr: '', ar: '', code: '' } })); return; } const t = await mockApi.updateTitre(titrePf, numero as any, vals.fr.trim(), vals.ar.trim(), code); setTitres(prev => { const idx = prev.findIndex((x:any) => x.portefeuille_id === titrePf && x.numero === numero); if (idx !== -1) { const next = [...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); setTitreInputs(prev => ({ ...prev, [numero]: { fr: t.name_fr, ar: t.name_ar, code: t.code } })); };
+  const createTitre = async () => { if (!titrePf || !titreAddNum || !titreAddFr.trim()) return; const num = Number(titreAddNum) as any; const code = (titreAddCode || '').replace(/\D/g,'').slice(0,5); const t = await mockApi.addTitre(titrePf, num, titreAddFr.trim(), titreAddAr.trim(), code); setTitres(prev => { const idx = prev.findIndex((x:any) => x.portefeuille_id === titrePf && x.numero === t.numero); if (idx !== -1) { const next = [...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); setTitreInputs(prev => ({ ...prev, [Number(t.numero)]: { fr: t.name_fr, ar: t.name_ar, code: t.code } })); setTitreAddNum(undefined); setTitreAddFr(""); setTitreAddAr(""); setTitreAddCode(""); };
+
+  const addOp = async () => { if (!newOpSp || typeof newOpNumber !== 'number') return; const op = await mockApi.addOperation(newOpSp, newOpNumber); setOperations(prev => [...prev, { id: op.id, sous_programme_id: op.sous_programme_id, number: op.number }]); setNewOpSp(undefined); setNewOpNumber(undefined); };
+  const updateOp = async (id: string, patch: any) => { const op = await mockApi.updateOperation(id, { number: patch.number, sous_programme_id: patch.sous_programme_id }); setOperations(prev => prev.map(x => x.id === id ? { ...x, number: op.number ?? x.number, sous_programme_id: op.sous_programme_id ?? x.sous_programme_id } : x)); };
+  const deleteOp = async (id: string) => { await mockApi.deleteOperation(id); setOperations(prev => prev.filter(x => x.id !== id)); };
 
   return (
     <div className="space-y-6">
@@ -433,9 +565,9 @@ function MetadataManager() {
               <input value={newDrbAr} onChange={(e)=>setNewDrbAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 rounded-lg input-gradient" />
               <button onClick={addDrb} className="px-3 py-2 rounded-lg btn-brand flex items-center gap-2"><Plus className="w-4 h-4" /> Ajouter</button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[30vh]">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom FR</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom AR</th>
@@ -465,31 +597,28 @@ function MetadataManager() {
             </div>
           </div>
           <div className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
               <input value={newWilayaFr} onChange={(e)=>setNewWilayaFr(e.target.value)} placeholder="Nom FR" className="px-3 py-2 rounded-lg input-gradient" />
               <input value={newWilayaAr} onChange={(e)=>setNewWilayaAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 rounded-lg input-gradient" />
-              <input value={newWilayaCode} onChange={(e)=>setNewWilayaCode(e.target.value)} placeholder="Code" className="px-3 py-2 rounded-lg input-gradient" />
-              <RadixSelect value={newWilayaDrb as any} onChange={(v)=>setNewWilayaDrb(v as any)} options={drbs.map((d:any)=>({ label: d.name_fr, value: d.id })) as any} />
+              <RadixSelect value={newWilayaDrb as any} onChange={(v)=>setNewWilayaDrb(v as any)} options={drbs.map((d:any)=>({ label: d.name_fr, value: String(d.id) })) as any} />
               <button onClick={addWilaya} className="px-3 py-2 rounded-lg btn-brand flex items-center gap-2"><Plus className="w-4 h-4" /> Ajouter</button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[30vh]">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom FR</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom AR</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">DRB</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {wilayas.filter((w:any)=> (w.name_fr || w.name || '').toLowerCase().includes(qWilaya.toLowerCase())).map(w => (
+                  {wilayas.filter((w:any)=> ((w.name_fr || w.name || '').toLowerCase()).includes((qWilaya || '').toLowerCase())).map(w => (
                     <tr key={w.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2"><input defaultValue={w.name_fr || w.name} onBlur={(e)=>updateWilaya(w.id, { name_fr: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
                       <td className="px-3 py-2"><input defaultValue={w.name_ar || ''} onBlur={(e)=>updateWilaya(w.id, { name_ar: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
-                      <td className="px-3 py-2"><input defaultValue={w.code} onBlur={(e)=>updateWilaya(w.id, { code: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
-                      <td className="px-3 py-2"><RadixSelect value={(w.drb_id || '') as any} onChange={(v)=>updateWilaya(w.id, { drb_id: v as any })} options={drbs.map((d:any)=>({ label: d.name_fr, value: d.id })) as any} /></td>
+                      <td className="px-3 py-2"><RadixSelect value={(String(w.drb_id || '')) as any} onChange={(v)=>updateWilaya(w.id, { drb_id: v as any })} options={drbs.map((d:any)=>({ label: d.name_fr, value: String(d.id) })) as any} /></td>
                       <td className="px-3 py-2"><button onClick={()=>{ if(confirm('Supprimer cette wilaya ?')) deleteWilaya(w.id); }} className="p-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button></td>
                     </tr>
                   ))}
@@ -500,23 +629,24 @@ function MetadataManager() {
         </div>
 
         <div className="glass-card rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Communes</h3>
             <div className="flex items-center gap-2">
+              <RadixSelect value={communesWilayaId as any} onChange={(v)=>setCommunesWilayaId(v as any)} options={wilayas.map((w:any)=>({ label: w.name_fr || w.name, value: String(w.id) })) as any} />
               <input value={qCommune} onChange={(e)=>setQCommune(e.target.value)} placeholder="Filtrer" className="px-2 py-1 rounded input-gradient" />
               <span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200">{communes.length}</span>
             </div>
           </div>
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-              <RadixSelect value={newCommuneWilaya as any} onChange={(v)=>setNewCommuneWilaya(v as any)} options={wilayas.map((w:any)=>({ label: w.name_fr || w.name, value: w.id })) as any} />
+              <RadixSelect value={newCommuneWilaya as any} onChange={(v)=>setNewCommuneWilaya(v as any)} options={wilayas.map((w:any)=>({ label: w.name_fr || w.name, value: String(w.id) })) as any} />
               <input value={newCommuneFr} onChange={(e)=>setNewCommuneFr(e.target.value)} placeholder="Nom FR" className="px-3 py-2 rounded-lg input-gradient" />
               <input value={newCommuneAr} onChange={(e)=>setNewCommuneAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 rounded-lg input-gradient" />
               <button onClick={addCommune} className="px-3 py-2 rounded-lg btn-brand flex items-center gap-2"><Plus className="w-4 h-4" /> Ajouter</button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[30vh]">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Wilaya</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom FR</th>
@@ -525,17 +655,177 @@ function MetadataManager() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {communes.filter((c:any)=> c.name_fr.toLowerCase().includes(qCommune.toLowerCase())).map(c => (
+                  {communes.filter((c:any)=> ((c.name_fr || '').toLowerCase().includes((qCommune || '').toLowerCase()) || (c.name_ar || '').toLowerCase().includes((qCommune || '').toLowerCase()))).map(c => (
                     <tr key={c.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2"><RadixSelect value={c.wilaya_id as any} onChange={(v)=>updateCommune(c.id, { wilaya_id: v as any })} options={wilayas.map((w:any)=>({ label: w.name_fr || w.name, value: w.id })) as any} /></td>
-                      <td className="px-3 py-2"><input defaultValue={c.name_fr} onBlur={(e)=>updateCommune(c.id, { name_fr: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
-                      <td className="px-3 py-2"><input defaultValue={c.name_ar} onBlur={(e)=>updateCommune(c.id, { name_ar: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2"><RadixSelect value={c.wilaya_id as any} onChange={(v)=>updateCommune(c.id, { wilaya_id: v as any })} options={wilayas.map((w:any)=>({ label: w.name_fr || w.name, value: String(w.id) })) as any} /></td>
+                      <td className="px-3 py-2"><input defaultValue={c.name_fr} onBlur={(e)=>updateCommune(c.id, { name_fr: e.target.value, wilaya_id: c.wilaya_id })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2"><input defaultValue={c.name_ar} onBlur={(e)=>updateCommune(c.id, { name_ar: e.target.value, wilaya_id: c.wilaya_id })} className="w-full px-2 py-1 rounded input-gradient" /></td>
                       <td className="px-3 py-2"><button onClick={()=>{ if(confirm('Supprimer cette commune ?')) deleteCommune(c.id); }} className="p-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Portefeuille de programmes</h3>
+            <span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200">{portefeuilles.length}</span>
+          </div>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <input value={newPfFr} onChange={(e)=>setNewPfFr(e.target.value)} placeholder="Nom FR" className="px-3 py-2 rounded-lg input-gradient" />
+              <input value={newPfAr} onChange={(e)=>setNewPfAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 rounded-lg input-gradient" />
+              <button onClick={addPf} className="px-3 py-2 rounded-lg btn-brand flex items-center gap-2"><Plus className="w-4 h-4" /> Ajouter</button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[1,2,3,4,5,6,7].map(n => (
+                <button key={n} onClick={()=>setNewPfTitres(prev => prev.includes(n) ? prev.filter(x=>x!==n) : [...prev, n])} className={`px-2 py-1 text-xs rounded-full border ${newPfTitres.includes(n) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>Titre {n}</button>
+              ))}
+            </div>
+            <div className="overflow-x-auto overflow-y-auto max-h-[30vh]">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10"><tr><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom FR</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom AR</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Titres affectés</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {portefeuilles.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2"><input defaultValue={p.name_fr} onBlur={(e)=>updatePf(p.id, { name_fr: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2"><input defaultValue={p.name_ar} onBlur={(e)=>updatePf(p.id, { name_ar: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-wrap gap-2">
+                          {[1,2,3,4,5,6,7].map(n => {
+                            const assigned = titres.some((t:any)=> t.portefeuille_id === p.id && t.numero === n);
+                            return (
+                              <button key={n} onClick={()=>togglePfTitre(p.id, n, !assigned)} className={`px-2 py-1 text-xs rounded-full border ${assigned ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>Titre {n}</button>
+                            );
+                          })}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2"><button onClick={()=>{ if(confirm('Supprimer ce portefeuille ?')) deletePf(p.id); }} className="p-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Programmes</h3>
+            <span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200">{programmes.length}</span>
+          </div>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <RadixSelect value={newProgPf as any} onChange={(v)=>setNewProgPf(v as any)} options={portefeuilles.map((p:any)=>({ label: p.name_fr, value: String(p.id) })) as any} />
+              <input value={newProgFr} onChange={(e)=>setNewProgFr(e.target.value)} placeholder="Nom FR" className="px-3 py-2 rounded-lg input-gradient" />
+              <input value={newProgAr} onChange={(e)=>setNewProgAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 rounded-lg input-gradient" />
+              <button onClick={addProg} className="px-3 py-2 rounded-lg btn-brand flex items-center gap-2"><Plus className="w-4 h-4" /> Ajouter</button>
+            </div>
+            <div className="overflow-x-auto overflow-y-auto max-h-[30vh]">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10"><tr><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Portefeuille</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom FR</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom AR</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {programmes.map(pr => (
+                    <tr key={pr.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2"><RadixSelect value={String(pr.portefeuille_id) as any} onChange={(v)=>updateProg(pr.id, { portefeuille_id: v as any })} options={portefeuilles.map((p:any)=>({ label: p.name_fr, value: String(p.id) })) as any} /></td>
+                      <td className="px-3 py-2"><input defaultValue={pr.name_fr} onBlur={(e)=>updateProg(pr.id, { name_fr: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2"><input defaultValue={pr.name_ar} onBlur={(e)=>updateProg(pr.id, { name_ar: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2"><button onClick={()=>{ if(confirm('Supprimer ce programme ?')) deleteProg(pr.id); }} className="p-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Sous Programmes</h3>
+            <span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200">{sousProgrammes.length}</span>
+          </div>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <RadixSelect value={newSpProg as any} onChange={(v)=>setNewSpProg(v as any)} options={programmes.map((pr:any)=>({ label: pr.name_fr, value: String(pr.id) })) as any} />
+              <input value={newSpFr} onChange={(e)=>setNewSpFr(e.target.value)} placeholder="Nom FR" className="px-3 py-2 rounded-lg input-gradient" />
+              <input value={newSpAr} onChange={(e)=>setNewSpAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 rounded-lg input-gradient" />
+              <button onClick={addSp} className="px-3 py-2 rounded-lg btn-brand flex items-center gap-2"><Plus className="w-4 h-4" /> Ajouter</button>
+            </div>
+            <div className="overflow-x-auto overflow-y-auto max-h-[30vh]">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10"><tr><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Programme</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom FR</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom AR</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sousProgrammes.map(sp => (
+                    <tr key={sp.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2"><RadixSelect value={String(sp.programme_id) as any} onChange={(v)=>updateSp(sp.id, { programme_id: v as any })} options={programmes.map((pr:any)=>({ label: pr.name_fr, value: String(pr.id) })) as any} /></td>
+                      <td className="px-3 py-2"><input defaultValue={sp.name_fr} onBlur={(e)=>updateSp(sp.id, { name_fr: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2"><input defaultValue={sp.name_ar} onBlur={(e)=>updateSp(sp.id, { name_ar: e.target.value })} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                      <td className="px-3 py-2"><button onClick={()=>{ if(confirm('Supprimer ce sous programme ?')) deleteSp(sp.id); }} className="p-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Titres (1 à 7) par Portefeuille</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {portefeuilles.map((p:any)=> (
+                <button
+                  key={p.id}
+                  onClick={()=>loadTitresForPf(String(p.id))}
+                  className={`px-2 py-1 text-xs rounded-full border ${titrePf===p.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200'}`}
+                >
+                  {p.name_fr}
+                </button>
+              ))}
+            </div>
+            {titrePf && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                  <input value={titreAddNum || ''} onChange={(e)=>{ const v = e.target.value.replace(/\D/g,'').slice(0,1); setTitreAddNum(v); }} placeholder="Numéro (1–7)" className="px-3 py-2 rounded-lg input-gradient" />
+                  <input value={titreAddFr} onChange={(e)=>setTitreAddFr(e.target.value)} placeholder="Nom FR" className="px-3 py-2 rounded-lg input-gradient" />
+                  <input value={titreAddAr} onChange={(e)=>setTitreAddAr(e.target.value)} placeholder="Nom AR" className="px-3 py-2 rounded-lg input-gradient" />
+                  <input value={titreAddCode} onChange={(e)=>setTitreAddCode(e.target.value.replace(/\D/g,'').slice(0,5))} placeholder="Code (5 chiffres)" className="px-3 py-2 rounded-lg input-gradient" />
+                  <button onClick={createTitre} className="px-3 py-2 rounded-lg btn-brand">Ajouter</button>
+                </div>
+                <div className="overflow-x-auto overflow-y-auto max-h-[30vh]">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Numéro</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom FR</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom AR</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {titres.filter((t:any)=> t.portefeuille_id === titrePf).sort((a:any,b:any)=> a.numero - b.numero).map((t:any) => (
+                        <tr key={`${t.portefeuille_id}-${t.numero}`} className="hover:bg-gray-50">
+                          <td className="px-3 py-2">{t.numero}</td>
+                          <td className="px-3 py-2"><input value={titreInputs[t.numero]?.fr ?? t.name_fr ?? ''} onChange={(e)=>setTitreInputs(prev => ({ ...prev, [t.numero]: { fr: e.target.value, ar: prev[t.numero]?.ar ?? t.name_ar ?? '', code: prev[t.numero]?.code ?? t.code ?? '' } }))} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                          <td className="px-3 py-2"><input value={titreInputs[t.numero]?.ar ?? t.name_ar ?? ''} onChange={(e)=>setTitreInputs(prev => ({ ...prev, [t.numero]: { fr: prev[t.numero]?.fr ?? t.name_fr ?? '', ar: e.target.value, code: prev[t.numero]?.code ?? t.code ?? '' } }))} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                          <td className="px-3 py-2"><input value={(titreInputs[t.numero]?.code ?? t.code ?? '').toString()} onChange={(e)=>setTitreInputs(prev => ({ ...prev, [t.numero]: { fr: prev[t.numero]?.fr ?? t.name_fr ?? '', ar: prev[t.numero]?.ar ?? t.name_ar ?? '', code: e.target.value.replace(/\D/g,'').slice(0,5) } }))} className="w-full px-2 py-1 rounded input-gradient" /></td>
+                          <td className="px-3 py-2 flex items-center gap-2 justify-end">
+                            <button onClick={()=>saveTitre(t.numero)} className="px-3 py-2 rounded-lg btn-brand">Enregistrer</button>
+                            <button onClick={async ()=>{ await mockApi.deleteTitre(t.portefeuille_id, t.numero as any); setTitres(prev => prev.filter((x:any)=> !(x.portefeuille_id===t.portefeuille_id && x.numero===t.numero))); setTitreInputs(prev => ({ ...prev, [t.numero]: { fr: '', ar: '', code: '' } })); }} className="p-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
