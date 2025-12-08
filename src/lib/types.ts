@@ -182,34 +182,36 @@ export interface NewUserResult {
 
 export interface Portefeuille {
   id: string;
-  code: string;
   name_fr: string;
   name_ar: string;
-  liste_programmes: Programme[];
-  liste_titres: TitreMeta[];
+  code?: string;
+  liste_programmes?: Programme[];
+  liste_titres?: TitreMeta[];
 }
 
 export interface Programme {
   id: string;
-  code: string;
   portefeuille_id: string;
   name_fr: string;
   name_ar: string;
+  code?: string;
 }
 
 export interface SousProgramme {
   id: string;
-  code: string;
   programme_id: string;
   name_fr: string;
   name_ar: string;
+  code?: string;
 }
 
 export interface ActionMeta {
   id: string;
-  code: string;
-  description: string;
-  liste_sous_actions: SubActionMeta[];
+  sous_programme_id?: string;
+  name: string;
+  code?: string;
+  description?: string;
+  liste_sous_actions?: SubActionMeta[];
 }
 export interface SubActionMeta {
   id: string;
@@ -228,6 +230,7 @@ export interface TitreMeta {
 
 export interface OperationMeta {
   id: string;
-  code_concatenated: string;
+  sous_programme_id?: string;
   number: number;
+  code_concatenated?: string;
 }

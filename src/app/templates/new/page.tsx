@@ -31,11 +31,11 @@ export default function TemplateNewPage() {
       try {
         const c = await mockApi.createCanvas({});
         setCanvas(c);
-        const pf = await mockApi.listPortefeuilles();
+        const pf = await (mockApi as any).listPortefeuilles?.();
         setPortefeuilles(pf);
-        const pr = await mockApi.listProgrammes();
+        const pr = await (mockApi as any).listProgrammes?.();
         setProgrammes(pr);
-        const sp = await mockApi.listSousProgrammes();
+        const sp = await (mockApi as any).listSousProgrammes?.();
         setSousProgrammes(sp);
       } catch (e: any) {
         setError(e.message);
@@ -46,7 +46,7 @@ export default function TemplateNewPage() {
     load();
   }, []);
 
-  useEffect(() => { (async () => { if (!pfId) { setTitres([]); setTitreNumero(undefined); return; } const tts = await mockApi.listTitres(pfId); setTitres(tts); })(); }, [pfId]);
+  useEffect(() => { (async () => { if (!pfId) { setTitres([]); setTitreNumero(undefined); return; } const tts = await (mockApi as any).listTitres?.(pfId); setTitres(tts); })(); }, [pfId]);
 
   const filteredProgrammes = useMemo(() => programmes.filter((p:any) => !pfId || p.portefeuille_id === pfId), [programmes, pfId]);
   const filteredSousProgrammes = useMemo(() => sousProgrammes.filter((s:any) => !progId || s.programme_id === progId), [sousProgrammes, progId]);

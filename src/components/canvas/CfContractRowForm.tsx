@@ -71,12 +71,13 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
   }, []);
 
   React.useEffect(() => { (async () => {
-    const [pf, pr, sp] = await Promise.all([mockApi.listPortefeuilles(), mockApi.listProgrammes(), mockApi.listSousProgrammes()]);
+    const api = mockApi as any;
+    const [pf, pr, sp] = await Promise.all([api.listPortefeuilles?.(), api.listProgrammes?.(), api.listSousProgrammes?.()]);
     setPortefeuilles(pf);
     setProgrammes(pr);
     setSousProgrammes(sp);
   })(); }, []);
-  React.useEffect(() => { (async () => { if (!pfId) { setTitres([]); setTitreNumero(undefined); return; } const tts = await mockApi.listTitres(pfId); setTitres(tts); })(); }, [pfId]);
+  React.useEffect(() => { (async () => { if (!pfId) { setTitres([]); setTitreNumero(undefined); return; } const tts = await (mockApi as any).listTitres?.(pfId); setTitres(tts); })(); }, [pfId]);
   const filteredProgrammes = React.useMemo(() => programmes.filter((p:any) => !pfId || p.portefeuille_id === pfId), [programmes, pfId]);
   const filteredSousProgrammes = React.useMemo(() => sousProgrammes.filter((s:any) => !progId || s.programme_id === progId), [sousProgrammes, progId]);
 

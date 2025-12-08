@@ -423,6 +423,7 @@ function MetadataManager() {
   const [newOpSp, setNewOpSp] = React.useState<string | undefined>(undefined);
   const [newOpNumber, setNewOpNumber] = React.useState<number | undefined>(undefined);
   const [communesWilayaId, setCommunesWilayaId] = React.useState<string | undefined>(undefined);
+  const api = mockApi as any;
 
   const API_BASE = "/api";
   const headers = { "Content-Type": "application/json", Accept: "application/json" } as const;
@@ -450,18 +451,18 @@ function MetadataManager() {
       setCommunesWilayaId(mapped[0]?.id);
     } catch {}
     try {
-      const pf = await mockApi.listPortefeuilles();
-      setPortefeuilles(pf.map(p => ({ id: p.id, name_fr: p.name_fr, name_ar: p.name_ar })));
-      const pr = await mockApi.listProgrammes();
-      setProgrammes(pr.map(p => ({ id: p.id, portefeuille_id: p.portefeuille_id, name_fr: p.name_fr, name_ar: p.name_ar })));
-      const sp = await mockApi.listSousProgrammes();
-      setSousProgrammes(sp.map(s => ({ id: s.id, programme_id: s.programme_id, name_fr: s.name_fr, name_ar: s.name_ar })));
-      const acts = await mockApi.listActions();
-      setActions(acts.map(a => ({ id: a.id, sous_programme_id: a.sous_programme_id, name: a.name })));
-      const tts = await mockApi.listTitres();
-      setTitres(tts.map(t => ({ id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: (t as any).code })));
-      const ops = await mockApi.listOperations();
-      setOperations(ops.map(o => ({ id: o.id, sous_programme_id: o.sous_programme_id, number: o.number })));
+      const pf = await api.listPortefeuilles?.() ?? [];
+      setPortefeuilles(pf.map((p: any) => ({ id: p.id, name_fr: p.name_fr, name_ar: p.name_ar })));
+      const pr: any[] = (await api.listProgrammes?.()) ?? [];
+      setProgrammes(pr.map((p: any) => ({ id: p.id, portefeuille_id: p.portefeuille_id, name_fr: p.name_fr, name_ar: p.name_ar })));
+      const sp: any[] = (await api.listSousProgrammes?.()) ?? [];
+      setSousProgrammes(sp.map((s: any) => ({ id: s.id, programme_id: s.programme_id, name_fr: s.name_fr, name_ar: s.name_ar })));
+      const acts: any[] = (await api.listActions?.()) ?? [];
+      setActions(acts.map((a: any) => ({ id: a.id, sous_programme_id: a.sous_programme_id, name: a.name })));
+      const tts: any[] = (await api.listTitres?.()) ?? [];
+      setTitres(tts.map((t: any) => ({ id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code })));
+      const ops: any[] = (await api.listOperations?.()) ?? [];
+      setOperations(ops.map((o: any) => ({ id: o.id, sous_programme_id: o.sous_programme_id, number: o.number })));
     } catch {}
   })(); }, []);
 
@@ -507,28 +508,28 @@ function MetadataManager() {
   };
   const deleteCommune = async (id: string) => { await fetch(`${API_BASE}/communes/${id}`, { method: 'DELETE', headers, body: JSON.stringify({ id: Number(id) }) }); setCommunes(prev => prev.filter(x => x.id !== id)); await loadCommunesForWilaya(communesWilayaId); };
 
-  const addPf = async () => { if (!newPfFr.trim()) return; const p = await mockApi.addPortefeuille(newPfFr.trim(), newPfAr.trim()); setPortefeuilles(prev => [...prev, { id: p.id, name_fr: p.name_fr, name_ar: p.name_ar }]);
-    for (const n of newPfTitres) { const t = await mockApi.setTitre(p.id, n as any, `Titre ${n}`, ""); }
-    const tts = await mockApi.listTitres(p.id); setTitres(prev => [...prev, ...tts.filter(x => x.portefeuille_id === p.id)]);
+  const addPf = async () => { if (!newPfFr.trim()) return; const p = await api.addPortefeuille(newPfFr.trim(), newPfAr.trim()); setPortefeuilles(prev => [...prev, { id: p.id, name_fr: p.name_fr, name_ar: p.name_ar }]);
+    for (const n of newPfTitres) { const t = await api.setTitre(p.id, n as any, `Titre ${n}`, ""); }
+    const tts = await api.listTitres(p.id); setTitres(prev => [...prev, ...tts.filter((x: any) => x.portefeuille_id === p.id)]);
     setNewPfTitres([]); setNewPfFr(""); setNewPfAr(""); };
   const togglePfTitre = async (pfId: string, num: number, on: boolean) => {
-    if (on) { const t = await mockApi.setTitre(pfId, num as any, `Titre ${num}`, "", "00000"); setTitres(prev => { const idx = prev.findIndex((x:any)=> x.portefeuille_id===pfId && x.numero===num); if (idx!==-1) { const next=[...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); }
-    else { await mockApi.deleteTitre(pfId, num as any); setTitres(prev => prev.filter((x:any)=> !(x.portefeuille_id===pfId && x.numero===num))); }
+    if (on) { const t = await api.setTitre(pfId, num as any, `Titre ${num}`, "", "00000"); setTitres(prev => { const idx = prev.findIndex((x:any)=> x.portefeuille_id===pfId && x.numero===num); if (idx!==-1) { const next=[...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); }
+    else { await api.deleteTitre(pfId, num as any); setTitres(prev => prev.filter((x:any)=> !(x.portefeuille_id===pfId && x.numero===num))); }
   };
-  const updatePf = async (id: string, patch: any) => { const p = await mockApi.updatePortefeuille(id, { name_fr: patch.name_fr, name_ar: patch.name_ar }); setPortefeuilles(prev => prev.map(x => x.id === id ? { ...x, name_fr: p.name_fr, name_ar: p.name_ar } : x)); };
-  const deletePf = async (id: string) => { await mockApi.deletePortefeuille(id); setPortefeuilles(prev => prev.filter(x => x.id !== id)); setProgrammes(prev => prev.filter(x => x.portefeuille_id !== id)); setTitres(prev => prev.filter(x => x.portefeuille_id !== id)); };
+  const updatePf = async (id: string, patch: any) => { const p = await api.updatePortefeuille(id, { name_fr: patch.name_fr, name_ar: patch.name_ar }); setPortefeuilles(prev => prev.map(x => x.id === id ? { ...x, name_fr: p.name_fr, name_ar: p.name_ar } : x)); };
+  const deletePf = async (id: string) => { await api.deletePortefeuille(id); setPortefeuilles(prev => prev.filter(x => x.id !== id)); setProgrammes(prev => prev.filter(x => x.portefeuille_id !== id)); setTitres(prev => prev.filter(x => x.portefeuille_id !== id)); };
 
-  const addProg = async () => { if (!newProgPf || !newProgFr.trim()) return; const pr = await mockApi.addProgramme(newProgPf, newProgFr.trim(), newProgAr.trim()); setProgrammes(prev => [...prev, { id: pr.id, portefeuille_id: pr.portefeuille_id, name_fr: pr.name_fr, name_ar: pr.name_ar }]); setNewProgFr(""); setNewProgAr(""); setNewProgPf(undefined); };
-  const updateProg = async (id: string, patch: any) => { const pr = await mockApi.updateProgramme(id, { name_fr: patch.name_fr, name_ar: patch.name_ar, portefeuille_id: patch.portefeuille_id }); setProgrammes(prev => prev.map(x => x.id === id ? { ...x, name_fr: pr.name_fr ?? x.name_fr, name_ar: pr.name_ar ?? x.name_ar, portefeuille_id: pr.portefeuille_id ?? x.portefeuille_id } : x)); };
-  const deleteProg = async (id: string) => { await mockApi.deleteProgramme(id); setProgrammes(prev => prev.filter(x => x.id !== id)); setSousProgrammes(prev => prev.filter(x => x.programme_id !== id)); };
+  const addProg = async () => { if (!newProgPf || !newProgFr.trim()) return; const pr = await api.addProgramme(newProgPf, newProgFr.trim(), newProgAr.trim()); setProgrammes(prev => [...prev, { id: pr.id, portefeuille_id: pr.portefeuille_id, name_fr: pr.name_fr, name_ar: pr.name_ar }]); setNewProgFr(""); setNewProgAr(""); setNewProgPf(undefined); };
+  const updateProg = async (id: string, patch: any) => { const pr = await api.updateProgramme(id, { name_fr: patch.name_fr, name_ar: patch.name_ar, portefeuille_id: patch.portefeuille_id }); setProgrammes(prev => prev.map(x => x.id === id ? { ...x, name_fr: pr.name_fr ?? x.name_fr, name_ar: pr.name_ar ?? x.name_ar, portefeuille_id: pr.portefeuille_id ?? x.portefeuille_id } : x)); };
+  const deleteProg = async (id: string) => { await api.deleteProgramme(id); setProgrammes(prev => prev.filter(x => x.id !== id)); setSousProgrammes(prev => prev.filter(x => x.programme_id !== id)); };
 
-  const addSp = async () => { if (!newSpProg || !newSpFr.trim()) return; const sp = await mockApi.addSousProgramme(newSpProg, newSpFr.trim(), newSpAr.trim()); setSousProgrammes(prev => [...prev, { id: sp.id, programme_id: sp.programme_id, name_fr: sp.name_fr, name_ar: sp.name_ar }]); setNewSpFr(""); setNewSpAr(""); setNewSpProg(undefined); };
-  const updateSp = async (id: string, patch: any) => { const sp = await mockApi.updateSousProgramme(id, { name_fr: patch.name_fr, name_ar: patch.name_ar, programme_id: patch.programme_id }); setSousProgrammes(prev => prev.map(x => x.id === id ? { ...x, name_fr: sp.name_fr ?? x.name_fr, name_ar: sp.name_ar ?? x.name_ar, programme_id: sp.programme_id ?? x.programme_id } : x)); };
-  const deleteSp = async (id: string) => { await mockApi.deleteSousProgramme(id); setSousProgrammes(prev => prev.filter(x => x.id !== id)); setActions(prev => prev.filter(x => x.sous_programme_id !== id)); setOperations(prev => prev.filter(x => x.sous_programme_id !== id)); };
+  const addSp = async () => { if (!newSpProg || !newSpFr.trim()) return; const sp = await api.addSousProgramme(newSpProg, newSpFr.trim(), newSpAr.trim()); setSousProgrammes(prev => [...prev, { id: sp.id, programme_id: sp.programme_id, name_fr: sp.name_fr, name_ar: sp.name_ar }]); setNewSpFr(""); setNewSpAr(""); setNewSpProg(undefined); };
+  const updateSp = async (id: string, patch: any) => { const sp = await api.updateSousProgramme(id, { name_fr: patch.name_fr, name_ar: patch.name_ar, programme_id: patch.programme_id }); setSousProgrammes(prev => prev.map(x => x.id === id ? { ...x, name_fr: sp.name_fr ?? x.name_fr, name_ar: sp.name_ar ?? x.name_ar, programme_id: sp.programme_id ?? x.programme_id } : x)); };
+  const deleteSp = async (id: string) => { await api.deleteSousProgramme(id); setSousProgrammes(prev => prev.filter(x => x.id !== id)); setActions(prev => prev.filter(x => x.sous_programme_id !== id)); setOperations(prev => prev.filter(x => x.sous_programme_id !== id)); };
 
-  const addActionMeta = async () => { if (!newActionSp || !newActionName.trim()) return; const a = await mockApi.addAction(newActionSp, newActionName.trim()); setActions(prev => [...prev, { id: a.id, sous_programme_id: a.sous_programme_id, name: a.name }]); setNewActionName(""); setNewActionSp(undefined); };
-  const updateActionMeta = async (id: string, patch: any) => { const a = await mockApi.updateAction(id, { name: patch.name, sous_programme_id: patch.sous_programme_id }); setActions(prev => prev.map(x => x.id === id ? { ...x, name: a.name ?? x.name, sous_programme_id: a.sous_programme_id ?? x.sous_programme_id } : x)); };
-  const deleteActionMeta = async (id: string) => { await mockApi.deleteAction(id); setActions(prev => prev.filter(x => x.id !== id)); };
+  const addActionMeta = async () => { if (!newActionSp || !newActionName.trim()) return; const a = await api.addAction(newActionSp, newActionName.trim()); setActions(prev => [...prev, { id: a.id, sous_programme_id: a.sous_programme_id, name: a.name }]); setNewActionName(""); setNewActionSp(undefined); };
+  const updateActionMeta = async (id: string, patch: any) => { const a = await api.updateAction(id, { name: patch.name, sous_programme_id: patch.sous_programme_id }); setActions(prev => prev.map(x => x.id === id ? { ...x, name: a.name ?? x.name, sous_programme_id: a.sous_programme_id ?? x.sous_programme_id } : x)); };
+  const deleteActionMeta = async (id: string) => { await api.deleteAction(id); setActions(prev => prev.filter(x => x.id !== id)); };
 
   const loadTitresForPf = (pfId: string) => {
     setTitrePf(pfId);
@@ -539,12 +540,12 @@ function MetadataManager() {
     }
     setTitreInputs(map);
   };
-  const saveTitre = async (numero: number) => { if (!titrePf) return; const vals = titreInputs[numero] || { fr: '', ar: '', code: '' }; const code = (vals.code || '').replace(/\D/g,'').slice(0,5); if (!vals.fr.trim() && !vals.ar.trim() && !code) { await mockApi.deleteTitre(titrePf, numero as any); setTitres(prev => prev.filter((x:any) => !(x.portefeuille_id === titrePf && x.numero === numero))); setTitreInputs(prev => ({ ...prev, [numero]: { fr: '', ar: '', code: '' } })); return; } const t = await mockApi.updateTitre(titrePf, numero as any, vals.fr.trim(), vals.ar.trim(), code); setTitres(prev => { const idx = prev.findIndex((x:any) => x.portefeuille_id === titrePf && x.numero === numero); if (idx !== -1) { const next = [...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); setTitreInputs(prev => ({ ...prev, [numero]: { fr: t.name_fr, ar: t.name_ar, code: t.code } })); };
-  const createTitre = async () => { if (!titrePf || !titreAddNum || !titreAddFr.trim()) return; const num = Number(titreAddNum) as any; const code = (titreAddCode || '').replace(/\D/g,'').slice(0,5); const t = await mockApi.addTitre(titrePf, num, titreAddFr.trim(), titreAddAr.trim(), code); setTitres(prev => { const idx = prev.findIndex((x:any) => x.portefeuille_id === titrePf && x.numero === t.numero); if (idx !== -1) { const next = [...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); setTitreInputs(prev => ({ ...prev, [Number(t.numero)]: { fr: t.name_fr, ar: t.name_ar, code: t.code } })); setTitreAddNum(undefined); setTitreAddFr(""); setTitreAddAr(""); setTitreAddCode(""); };
+  const saveTitre = async (numero: number) => { if (!titrePf) return; const vals = titreInputs[numero] || { fr: '', ar: '', code: '' }; const code = (vals.code || '').replace(/\D/g,'').slice(0,5); if (!vals.fr.trim() && !vals.ar.trim() && !code) { await api.deleteTitre(titrePf, numero as any); setTitres(prev => prev.filter((x:any) => !(x.portefeuille_id === titrePf && x.numero === numero))); setTitreInputs(prev => ({ ...prev, [numero]: { fr: '', ar: '', code: '' } })); return; } const t = await api.updateTitre(titrePf, numero as any, vals.fr.trim(), vals.ar.trim(), code); setTitres(prev => { const idx = prev.findIndex((x:any) => x.portefeuille_id === titrePf && x.numero === numero); if (idx !== -1) { const next = [...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); setTitreInputs(prev => ({ ...prev, [numero]: { fr: t.name_fr, ar: t.name_ar, code: t.code } })); };
+  const createTitre = async () => { if (!titrePf || !titreAddNum || !titreAddFr.trim()) return; const num = Number(titreAddNum) as any; const code = (titreAddCode || '').replace(/\D/g,'').slice(0,5); const t = await api.addTitre(titrePf, num, titreAddFr.trim(), titreAddAr.trim(), code); setTitres(prev => { const idx = prev.findIndex((x:any) => x.portefeuille_id === titrePf && x.numero === t.numero); if (idx !== -1) { const next = [...prev]; next[idx] = { ...next[idx], name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }; return next; } return [...prev, { id: t.id, portefeuille_id: t.portefeuille_id, numero: t.numero, name_fr: t.name_fr, name_ar: t.name_ar, code: t.code }]; }); setTitreInputs(prev => ({ ...prev, [Number(t.numero)]: { fr: t.name_fr, ar: t.name_ar, code: t.code } })); setTitreAddNum(undefined); setTitreAddFr(""); setTitreAddAr(""); setTitreAddCode(""); };
 
-  const addOp = async () => { if (!newOpSp || typeof newOpNumber !== 'number') return; const op = await mockApi.addOperation(newOpSp, newOpNumber); setOperations(prev => [...prev, { id: op.id, sous_programme_id: op.sous_programme_id, number: op.number }]); setNewOpSp(undefined); setNewOpNumber(undefined); };
-  const updateOp = async (id: string, patch: any) => { const op = await mockApi.updateOperation(id, { number: patch.number, sous_programme_id: patch.sous_programme_id }); setOperations(prev => prev.map(x => x.id === id ? { ...x, number: op.number ?? x.number, sous_programme_id: op.sous_programme_id ?? x.sous_programme_id } : x)); };
-  const deleteOp = async (id: string) => { await mockApi.deleteOperation(id); setOperations(prev => prev.filter(x => x.id !== id)); };
+  const addOp = async () => { if (!newOpSp || typeof newOpNumber !== 'number') return; const op = await api.addOperation(newOpSp, newOpNumber); setOperations(prev => [...prev, { id: op.id, sous_programme_id: op.sous_programme_id, number: op.number }]); setNewOpSp(undefined); setNewOpNumber(undefined); };
+  const updateOp = async (id: string, patch: any) => { const op = await api.updateOperation(id, { number: patch.number, sous_programme_id: patch.sous_programme_id }); setOperations(prev => prev.map(x => x.id === id ? { ...x, number: op.number ?? x.number, sous_programme_id: op.sous_programme_id ?? x.sous_programme_id } : x)); };
+  const deleteOp = async (id: string) => { await api.deleteOperation(id); setOperations(prev => prev.filter(x => x.id !== id)); };
 
   return (
     <div className="space-y-6">
