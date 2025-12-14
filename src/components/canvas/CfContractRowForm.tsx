@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { BudgetSource, FormeMarche, NaturePrestation, ModePassation, Devise, CfContractRow, DynamicColumn } from '@/lib/types';
+import { BudgetSource, FormeMarche, NaturePrestation, ModePassation, Devise, CfContractRow, DynamicColumn, ServiceContractantMeta } from '@/lib/types';
 import { mockApi } from '@/lib/mockData';
 import RadixSelect from '@/components/ui/RadixSelect';
 
@@ -29,7 +29,7 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
   const numberInput = (v: string) => Number(v.replace(/[^0-9.]/g, '')) || 0;
   const [dynCols, setDynCols] = useState<DynamicColumn[]>([]);
   const [dynValues, setDynValues] = useState<Record<string, any>>(initial?.dynamic_values || {});
-  const [budgetOptions, setBudgetOptions] = useState<string[]>([]);
+  const [serviceContractants, setServiceContractants] = useState<ServiceContractantMeta[]>([]);
   const [formeOptions, setFormeOptions] = useState<string[]>([]);
   const [natureOptions, setNatureOptions] = useState<string[]>([]);
   const [modeOptions, setModeOptions] = useState<string[]>([]);
@@ -52,16 +52,23 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
     return () => window.removeEventListener('dynamic-columns-changed', handler as any);
   }, []);
   const fetchBaseOptions = async () => {
-    const [b,f,n,m] = await Promise.all([
-      mockApi.getBaseColumnOptions('Service Contractant'),
+    const [f,n,m] = await Promise.all([
       mockApi.getBaseColumnOptions('Forme du marché'),
       mockApi.getBaseColumnOptions('Nature de prestation'),
       mockApi.getBaseColumnOptions('Mode de passation du marché'),
     ]);
-    setBudgetOptions(b);
     setFormeOptions(f);
     setNatureOptions(n);
     setModeOptions(m);
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    try {
+      const scRes = await fetch(`${API_BASE}/service-contractants`, { headers });
+      const scData = await unwrap(scRes);
+      const list: ServiceContractantMeta[] = (Array.isArray(scData) ? scData : (Array.isArray((scData as any)?.data) ? (scData as any).data : [])).map((s:any)=> ({ id: String(s.id ?? crypto.randomUUID()), denomination: s.denomination ?? '', sourceFinancement: { id: String(s.sourceFinancement?.id ?? ''), sourceFinancementFr: s.sourceFinancement?.sourceFinancementFr ?? '', sourceFinancementAr: s.sourceFinancement?.sourceFinancementAr ?? '' }, typeEtablissementId: s.typeEtablissementId ? String(s.typeEtablissementId) : undefined }));
+      setServiceContractants(list);
+    } catch {}
   };
   React.useEffect(() => { fetchBaseOptions(); }, []);
   React.useEffect(() => {
@@ -71,15 +78,59 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
   }, []);
 
   React.useEffect(() => { (async () => {
-    const api = mockApi as any;
-    const [pf, pr, sp] = await Promise.all([api.listPortefeuilles?.(), api.listProgrammes?.(), api.listSousProgrammes?.()]);
-    setPortefeuilles(pf);
-    setProgrammes(pr);
-    setSousProgrammes(sp);
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    try {
+      const pfRes = await fetch(`${API_BASE}/portefeuilles`, { headers });
+      const pfData = await unwrap(pfRes);
+      const pfList = Array.isArray(pfData) ? pfData.map((p: any) => ({ id: String(p.id ?? crypto.randomUUID()), name_fr: p.nameFr ?? p.name_fr ?? '', name_ar: p.nameAr ?? p.name_ar ?? '', code: p.code ?? '' })) : [];
+      setPortefeuilles(pfList);
+    } catch {}
   })(); }, []);
-  React.useEffect(() => { (async () => { if (!pfId) { setTitres([]); setTitreNumero(undefined); return; } const tts = await (mockApi as any).listTitres?.(pfId); setTitres(tts); })(); }, [pfId]);
-  const filteredProgrammes = React.useMemo(() => programmes.filter((p:any) => !pfId || p.portefeuille_id === pfId), [programmes, pfId]);
-  const filteredSousProgrammes = React.useMemo(() => sousProgrammes.filter((s:any) => !progId || s.programme_id === progId), [sousProgrammes, progId]);
+
+  React.useEffect(() => { (async () => {
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    if (!pfId) { setProgrammes([]); setProgId(undefined); return; }
+    try {
+      const res = await fetch(`${API_BASE}/portefeuilles/getProgrammesByPortfeuilleId/${pfId}`, { headers });
+      const data = await unwrap(res);
+      const list = Array.isArray(data) ? data.map((p: any) => ({ id: String(p.id ?? crypto.randomUUID()), portefeuille_id: String(p.portefeuilleId ?? pfId), name_fr: p.programmeNomFR ?? p.name_fr ?? '', name_ar: p.programmeNomAR ?? p.name_ar ?? '', code: p.programmeCode ?? '' })) : [];
+      setProgrammes(list);
+    } catch {}
+  })(); }, [pfId]);
+
+  React.useEffect(() => { (async () => {
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    if (!progId) { setSousProgrammes([]); setSpId(undefined); return; }
+    try {
+      const idPath = String(Number(progId));
+      const res = await fetch(`${API_BASE}/sous-programmes/programme/${idPath}`, { headers });
+      const data = await unwrap(res);
+      const arr = Array.isArray(data) ? data : (Array.isArray((data as any)?.data) ? (data as any).data : []);
+      const list = arr.map((s: any) => ({ id: String(s.id ?? crypto.randomUUID()), programme_id: String(s.programmeId ?? progId), name_fr: s.nomFr ?? s.name_fr ?? '', name_ar: s.nomAr ?? s.name_ar ?? '', code: s.code ?? '' }));
+      setSousProgrammes(list);
+    } catch {}
+  })(); }, [progId]);
+
+  React.useEffect(() => { (async () => {
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    try {
+      const res = await fetch(`${API_BASE}/titres`, { headers });
+      const data = await unwrap(res);
+      const list = Array.isArray(data) ? data.map((t: any) => ({ id: String(t.id ?? crypto.randomUUID()), numero: Number((t as any).numero ?? 0), name_fr: t.nomFr ?? '', name_ar: t.nomAr ?? '', code: t.code ?? '' })) : [];
+      setTitres(list);
+    } catch {}
+  })(); }, []);
+
+  const filteredProgrammes = React.useMemo(() => (programmes || []).filter((p:any) => !pfId || String(p.portefeuille_id) === String(pfId)), [programmes, pfId]);
+  const filteredSousProgrammes = React.useMemo(() => (sousProgrammes || []).filter((s:any) => !progId || String(s.programme_id) === String(progId)), [sousProgrammes, progId]);
 
   return (
     <div className="space-y-4">
@@ -122,7 +173,19 @@ const CfContractRowForm: React.FC<Props> = ({ initial, onSubmit }) => {
         <div>
           <label className="block text-sm text-gray-700 mb-1">Service Contractant</label>
           <div className="flex gap-2">
-            <RadixSelect className="input-gradient" value={form.service_contractant.source as any} onChange={(v)=>update('service_contractant', { ...form.service_contractant, source: v as BudgetSource })} options={budgetOptions} />
+            <RadixSelect className="input-gradient" value={form.service_contractant.label as any} onChange={(v)=>{
+              const sc = serviceContractants.find((s)=> String(s.id)===String(v));
+              const fr = sc?.sourceFinancement?.sourceFinancementFr || '';
+              const srcMap: Record<string, BudgetSource> = {
+                'Etat': 'Budget Etat',
+                'Collectivité locale': 'Budget Collectivité locale',
+                'EPIC/EPA..': 'Budget EPIC/EPA..',
+                'wilaya': 'Budget wilaya',
+                'commune': 'Budget commune',
+              };
+              const source = srcMap[fr] || 'Budget Etat';
+              update('service_contractant', { source, label: sc?.denomination || '' });
+            }} options={serviceContractants.map((s)=>({ label: `${s.denomination} • ${s.sourceFinancement.sourceFinancementFr}`, value: String(s.id) })) as any} />
             <input className="flex-1 px-3 py-2 rounded-lg input-gradient" placeholder="Libellé" value={form.service_contractant.label} onChange={(e) => update('service_contractant', { ...form.service_contractant, label: e.target.value })} />
           </div>
         </div>

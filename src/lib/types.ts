@@ -234,3 +234,43 @@ export interface OperationMeta {
   number: number;
   code_concatenated?: string;
 }
+
+export interface TypeEtablissementPublicMeta {
+  id: string;
+  nomFr: string;
+  nomAr: string;
+}
+
+export interface SourceFinancementMeta {
+  id: string;
+  sourceFinancementFr: string;
+  sourceFinancementAr: string;
+  typesEtablissementPublic?: TypeEtablissementPublicMeta[];
+}
+
+export interface ServiceContractantMeta {
+  id: string;
+  denomination: string;
+  sourceFinancement: SourceFinancementMeta;
+  typeEtablissementId?: string | null;
+}
+
+export type TypeCocontractant = 'interne' | 'externe';
+
+export interface NationaliteMeta {
+  id: string;
+  nameFr: string;
+  nameAr: string;
+}
+
+export interface PartenaireCocontractantMeta {
+  id: string;
+  name: string;
+  type_cocontractant: TypeCocontractant;
+  nationaliteId?: string | null;
+}
+
+export interface ObjetMetaCommon {
+  id: string;
+  content: string;
+}

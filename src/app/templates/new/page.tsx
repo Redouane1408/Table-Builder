@@ -28,15 +28,16 @@ export default function TemplateNewPage() {
 
   useEffect(() => {
     const load = async () => {
+      const API_BASE = '/api';
+      const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+      const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
       try {
         const c = await mockApi.createCanvas({});
         setCanvas(c);
-        const pf = await (mockApi as any).listPortefeuilles?.();
-        setPortefeuilles(pf);
-        const pr = await (mockApi as any).listProgrammes?.();
-        setProgrammes(pr);
-        const sp = await (mockApi as any).listSousProgrammes?.();
-        setSousProgrammes(sp);
+        const pfRes = await fetch(`${API_BASE}/portefeuilles`, { headers });
+        const pfData = await unwrap(pfRes);
+        const pfList = Array.isArray(pfData) ? pfData.map((p: any) => ({ id: String(p.id ?? crypto.randomUUID()), name_fr: p.nameFr ?? p.name_fr ?? '', name_ar: p.nameAr ?? p.name_ar ?? '', code: p.code ?? '' })) : [];
+        setPortefeuilles(pfList);
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -46,10 +47,49 @@ export default function TemplateNewPage() {
     load();
   }, []);
 
-  useEffect(() => { (async () => { if (!pfId) { setTitres([]); setTitreNumero(undefined); return; } const tts = await (mockApi as any).listTitres?.(pfId); setTitres(tts); })(); }, [pfId]);
+  useEffect(() => { (async () => {
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    if (!pfId) { setTitres([]); setTitreNumero(undefined); return; }
+    try {
+      const res = await fetch(`${API_BASE}/titres`, { headers });
+      const data = await unwrap(res);
+      const list = Array.isArray(data) ? data.map((t: any) => ({ id: String(t.id ?? crypto.randomUUID()), numero: Number((t as any).numero ?? 0), name_fr: t.nomFr ?? '', name_ar: t.nomAr ?? '', code: t.code ?? '' })) : [];
+      setTitres(list);
+    } catch {}
+  })(); }, [pfId]);
 
-  const filteredProgrammes = useMemo(() => programmes.filter((p:any) => !pfId || p.portefeuille_id === pfId), [programmes, pfId]);
-  const filteredSousProgrammes = useMemo(() => sousProgrammes.filter((s:any) => !progId || s.programme_id === progId), [sousProgrammes, progId]);
+  useEffect(() => { (async () => {
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    if (!pfId) { setProgrammes([]); setProgId(undefined); return; }
+    try {
+      const res = await fetch(`${API_BASE}/portefeuilles/getProgrammesByPortfeuilleId/${pfId}`, { headers });
+      const data = await unwrap(res);
+      const list = Array.isArray(data) ? data.map((p: any) => ({ id: String(p.id ?? crypto.randomUUID()), portefeuille_id: String(p.portefeuilleId ?? pfId), name_fr: p.programmeNomFR ?? p.name_fr ?? '', name_ar: p.programmeNomAR ?? p.name_ar ?? '', code: p.programmeCode ?? '' })) : [];
+      setProgrammes(list);
+    } catch {}
+  })(); }, [pfId]);
+
+  useEffect(() => { (async () => {
+    const API_BASE = '/api';
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' } as const;
+    const unwrap = async (res: Response) => { const j = await res.json().catch(() => ({})); return typeof (j as any)?.data !== 'undefined' ? (j as any).data : j; };
+    if (!progId) { setSousProgrammes([]); return; }
+    try {
+      const idPath = String(Number(progId));
+      const res = await fetch(`${API_BASE}/sous-programmes/programme/${idPath}`, { headers });
+      const data = await unwrap(res);
+      const arr = Array.isArray(data) ? data : (Array.isArray((data as any)?.data) ? (data as any).data : []);
+      const list = arr.map((s: any) => ({ id: String(s.id ?? crypto.randomUUID()), programme_id: String(s.programmeId ?? progId), name_fr: s.nomFr ?? s.name_fr ?? '', name_ar: s.nomAr ?? s.name_ar ?? '', code: s.code ?? '' }));
+      setSousProgrammes(list);
+    } catch {}
+  })(); }, [progId]);
+
+  const filteredProgrammes = useMemo(() => (programmes || []).filter((p:any) => !pfId || String(p.portefeuille_id) === String(pfId)), [programmes, pfId]);
+  const filteredSousProgrammes = useMemo(() => (sousProgrammes || []).filter((s:any) => !progId || String(s.programme_id) === String(progId)), [sousProgrammes, progId]);
 
   const data = useMemo(() => (canvas?.data as CFCanvasData) || { contracts: [] }, [canvas]);
 

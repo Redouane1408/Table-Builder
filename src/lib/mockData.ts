@@ -210,60 +210,10 @@ export const dynamicColumnsMarches: DynamicColumn[] = [];
 export const dynamicColumnsAvenants: DynamicColumn[] = [];
 export const derivedCanvasesMarches: DerivedCanvas[] = [];
 export const derivedCanvasesAvenants: DerivedCanvas[] = [];
-export const baseCanvaColumns: BaseCanvaColumn[] = [
-  { id: 'base-1', name: 'Service Contractant', type: 'dropdown', note: 'sélection + libellé' },
-  { id: 'base-2', name: 'Partenaire Cocontractant', type: 'string' },
-  { id: 'base-3', name: 'Objet du marché', type: 'string' },
-  { id: 'base-4', name: 'Forme du marché', type: 'dropdown' },
-  { id: 'base-5', name: 'Nature de prestation', type: 'dropdown' },
-  { id: 'base-6', name: 'Mode de passation du marché', type: 'dropdown' },
-  { id: 'base-7', name: 'Montant des versement (DZD)', type: 'amount_dzd' },
-  { id: 'base-8', name: 'Taux des versement (%)', type: 'percentage' },
-  { id: 'base-9', name: 'Montant TTC (DZD)', type: 'amount_dzd' },
-  { id: 'base-10', name: "Montant de l'avenant (DZD)", type: 'amount_dzd' },
-  { id: 'base-11', name: 'Montant final du marché (DZD)', type: 'amount_dzd' },
-  { id: 'base-12', name: 'Montant en devise', type: 'amount_fx' },
-];
-export const baseAvenantColumns: BaseCanvaColumn[] = [
-  { id: 'av-base-1', name: "Numéro de l'avenant", type: 'string' },
-  { id: 'av-base-2', name: "Date de l'avenant", type: 'string', note: 'date' },
-  { id: 'av-base-3', name: "Objet de l'avenant", type: 'string' },
-  { id: 'av-base-4', name: "Type d'avenant", type: 'dropdown' },
-  { id: 'av-base-5', name: 'Mode de passation du marché', type: 'dropdown' },
-  { id: 'av-base-6', name: "Montant de l'avenant (DZD)", type: 'amount_dzd' },
-  { id: 'av-base-7', name: 'Taux de variation (%)', type: 'percentage' },
-  { id: 'av-base-8', name: 'Nouveau montant final (DZD)', type: 'amount_dzd' },
-  { id: 'av-base-9', name: 'Montant en devise', type: 'amount_fx' },
-  { id: 'av-base-10', name: 'Motif', type: 'string' },
-];
-export const baseColumnOptions: Record<string, string[]> = {
-  'Service Contractant': ['Budget Etat','Budget Collectivité locale','Budget EPIC/EPA..','Budget wilaya','Budget commune'],
-  'Forme du marché': ['travaux','fournitures','études','services'],
-  'Nature de prestation': ['Marché','Marché à commande','Contrart-Programme','Etude et réalisation','une tranche ferme et une ou plusieurs tranche(s) conditionnelle(s)'],
-  'Mode de passation du marché': [
-    "Appel d'offres ouvert",
-    "Appel d'offres ouvert avec exigence de capacité minimales",
-    "Appel d'offres restreint",
-    'Concour',
-    'Négocier aprés consultation',
-    'Négocié direct',
-    "Procédure de consultation des marchés",
-    "Procédure spécifique en cas d'urgence impérieuse",
-  ],
-};
-export const baseAvenantColumnOptions: Record<string, string[]> = {
-  "Type d'avenant": ['additif','soustractif','reallocation'],
-  'Mode de passation du marché': [
-    "Appel d'offres ouvert",
-    "Appel d'offres ouvert avec exigence de capacité minimales",
-    "Appel d'offres restreint",
-    'Concour',
-    'Négocier aprés consultation',
-    'Négocié direct',
-    "Procédure de consultation des marchés",
-    "Procédure spécifique en cas d'urgence impérieuse",
-  ],
-};
+export const baseCanvaColumns: BaseCanvaColumn[] = [];
+export const baseAvenantColumns: BaseCanvaColumn[] = [];
+export const baseColumnOptions: Record<string, string[]> = {};
+export const baseAvenantColumnOptions: Record<string, string[]> = {};
 
 export const mockApi = {
   login: async (email: string, password: string): Promise<{ user: User; token: string }> => {
